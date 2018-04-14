@@ -979,7 +979,29 @@ uint32 card::get_rank() {
 uint32 card::get_link() {
 	if(!(data.type & TYPE_LINK) || (status & STATUS_NO_LEVEL))
 		return 0;
-	return data.level;
+	
+	uint32 count_markers = 0;
+	uint32 link_marker = get_link_marker();
+	if((int32)(link_marker & LINK_MARKER_BOTTOM_LEFT) > 0)
+		count_markers ++;
+	if((int32)(link_marker & LINK_MARKER_BOTTOM) > 0)
+		count_markers ++;
+	if((int32)(link_marker & LINK_MARKER_BOTTOM_RIGHT) > 0)
+		count_markers ++;
+	if((int32)(link_marker & LINK_MARKER_LEFT) > 0)
+		count_markers ++;
+	if((int32)(link_marker & LINK_MARKER_RIGHT) > 0)
+		count_markers ++;
+	if((int32)(link_marker & LINK_MARKER_TOP_LEFT) > 0)
+		count_markers ++;
+	if((int32)(link_marker & LINK_MARKER_TOP) > 0)
+		count_markers ++;
+	if((int32)(link_marker & LINK_MARKER_TOP_RIGHT) > 0)
+		count_markers ++;
+	
+	return count_markers;
+	
+	//return data.level;
 }
 uint32 card::get_synchro_level(card* pcard) {
 	if((data.type & (TYPE_XYZ | TYPE_LINK)) || (status & STATUS_NO_LEVEL))
