@@ -4415,6 +4415,30 @@ int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret,
 				overlays.insert(target->xyz_materials.begin(), target->xyz_materials.end());
 				send_to(&overlays, 0, REASON_LOST_TARGET + REASON_RULE, PLAYER_NONE, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
 			}
+			effect_set eset;
+			filter_player_effect(0, EFFECT_MUST_USE_SZONE, &eset, FALSE);
+			filter_player_effect(1, EFFECT_MUST_USE_SZONE, &eset, FALSE);
+			target->filter_effect(EFFECT_MUST_USE_SZONE, &eset);
+			for (int32 i = 0; i < eset.size(); i++) {
+				effect* peffect = eset[i];
+				if (peffect->is_flag(EFFECT_FLAG_COUNT_LIMIT) && peffect->count_limit == 0)
+					continue;
+				uint32 value = 0x1f00;
+				if (peffect->is_flag(EFFECT_FLAG_PLAYER_TARGET))
+					value = peffect->get_value();
+				else {
+					uint32 lreason = (target->current.location == LOCATION_SZONE) ? LOCATION_REASON_CONTROL : LOCATION_REASON_TOFIELD;
+					pduel->lua->add_param(target->current.controler, PARAM_TYPE_INT);
+					pduel->lua->add_param(move_player, PARAM_TYPE_INT);
+					pduel->lua->add_param(lreason, PARAM_TYPE_INT);
+					value = peffect->get_value(target, 3);
+				}
+				if (peffect->get_handler_player() != target->current.controler)
+					value = value >> 16;
+				if (value & (0x1 << target->current.sequence)) {
+					peffect->dec_count();
+				}
+			}
 		}
 		if((target->previous.location == LOCATION_SZONE) && target->equiping_target)
 			target->unequip();

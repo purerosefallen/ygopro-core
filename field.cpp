@@ -659,13 +659,39 @@ int32 field::get_tofield_count(card* pcard, uint8 playerid, uint8 location, uint
 				flag |= ~(value >> 16) & 0x1f;
 		}
 	}
+	if (location == LOCATION_SZONE && (reason & LOCATION_REASON_TOFIELD)) {
+		effect_set eset;
+		if (uplayer < 2)
+			filter_player_effect(uplayer, EFFECT_MUST_USE_SZONE, &eset);
+		if (pcard)
+			pcard->filter_effect(EFFECT_MUST_USE_SZONE, &eset);
+		for (int32 i = 0; i < eset.size(); ++i) {
+			if (eset[i]->is_flag(EFFECT_FLAG_COUNT_LIMIT) && eset[i]->count_limit == 0)
+				continue;
+			uint32 value = 0x1f00; 
+			if (eset[i]->is_flag(EFFECT_FLAG_PLAYER_TARGET))
+				value = eset[i]->get_value();
+			else {
+				pduel->lua->add_param(playerid, PARAM_TYPE_INT);
+				pduel->lua->add_param(uplayer, PARAM_TYPE_INT);
+				pduel->lua->add_param(reason, PARAM_TYPE_INT);
+				value = eset[i]->get_value(pcard, 3);
+			}
+			if (eset[i]->get_handler_player() == playerid)
+				flag |= ~value & 0x1f00;
+			else
+				flag |= ~(value >> 16) & 0x1f00;
+		}
+	}
 	if (location == LOCATION_MZONE)
 		flag = (flag | ~zone) & 0x1f;
 	else
 		flag = ((flag >> 8) | ~zone) & 0x1f;
 	int32 count = 5 - field_used_count[flag];
-	if(location == LOCATION_MZONE)
+	if (location == LOCATION_MZONE)
 		flag |= (1u << 5) | (1u << 6);
+	else
+		flag |= (1u << 5);
 	if(list)
 		*list = flag;
 	return count;
