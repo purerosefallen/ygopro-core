@@ -4433,6 +4433,7 @@ int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret,
 					pduel->lua->add_param(lreason, PARAM_TYPE_INT);
 					value = peffect->get_value(target, 3);
 				}
+				value = value >> 8;
 				if (peffect->get_handler_player() != target->current.controler)
 					value = value >> 16;
 				if (value & (0x1 << target->current.sequence)) {
