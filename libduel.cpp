@@ -178,7 +178,6 @@ int32 scriptlib::duel_load_script(lua_State *L) {
 	lua_pushboolean(L, pduel->lua->load_script(filename));
 	return 1;
 }
-
 int32 scriptlib::duel_reset_time_limit(lua_State * L) {
 	check_param_count(L, 1);
 	int32 p = lua_tointeger(L, 1);
@@ -193,6 +192,12 @@ int32 scriptlib::duel_reset_time_limit(lua_State * L) {
 	pduel->write_buffer8(MSG_RESET_TIME);
 	pduel->write_buffer8(p);
 	pduel->write_buffer16(time);	
+	return 0;
+}
+int32 scriptlib::duel_set_summon_cancelable(lua_State *L) {
+	check_param_count(L, 1);
+	duel* pduel = interpreter::get_duel_info(L);
+	duel->game_field->core.summon_cancelable = lua_toboolean(L, 1);
 	return 0;
 }
 
@@ -4720,6 +4725,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "LoadScript", scriptlib::duel_load_script },
 	{ "AnnounceCardFilter", scriptlib::duel_announce_card }, // For compat
 	{ "ResetTimeLimit", scriptlib::duel_reset_time_limit },
+	{ "SetSummonCancelable", scriptlib::duel_set_summon_cancelable },
 
 	{ "EnableGlobalFlag", scriptlib::duel_enable_global_flag },
 	{ "GetLP", scriptlib::duel_get_lp },

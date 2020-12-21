@@ -37,6 +37,7 @@ public:
 	static int32 duel_xyz_summon_by_rose(lua_State *L);
 	static int32 duel_load_script(lua_State *L);
 	static int32 duel_reset_time_limit(lua_State *L);
+	static int32 duel_set_summon_cancelable(lua_State *L);
 	//card lib
 	static int32 card_get_code(lua_State *L);
 	static int32 card_get_origin_code(lua_State *L);
