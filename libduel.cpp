@@ -197,7 +197,7 @@ int32 scriptlib::duel_reset_time_limit(lua_State * L) {
 int32 scriptlib::duel_set_summon_cancelable(lua_State *L) {
 	check_param_count(L, 1);
 	duel* pduel = interpreter::get_duel_info(L);
-	duel->game_field->core.summon_cancelable = lua_toboolean(L, 1);
+	pduel->game_field->core.summon_cancelable = lua_toboolean(L, 1);
 	return 0;
 }
 
