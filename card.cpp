@@ -1704,6 +1704,9 @@ int32 card::add_effect(effect* peffect) {
 			pduel->game_field->process_single_event();
 		}
 	}
+	if(peffect->type & EFFECT_TYPE_QUICK_O && peffect->code == EVENT_FREE_CHAIN && peffect->hint_timing[0] == 0 && peffect->hint_timing[1] == 0) {
+		peffect->hint_timing[1] = TIMING_END_PHASE;
+	}
 	return peffect->id;
 }
 void card::remove_effect(effect* peffect) {
