@@ -2369,7 +2369,7 @@ int32 field::effect_replace_check(uint32 code, const tevent& e) {
 int32 field::get_attack_target(card* pcard, card_vector* v, uint8 chain_attack, bool select_target) {
 	pcard->direct_attackable = 0;
 	uint8 p = pcard->current.controler;
-	card_vector auto_attack, only_attack, must_attack;
+	card_vector auto_attack, only_attack, must_attack, attack_target;
 	for(auto& atarget : player[1 - p].list_mzone) {
 		if(atarget) {
 			if(atarget->is_affected_by_effect(EFFECT_ONLY_BE_ATTACKED))
@@ -2402,7 +2402,20 @@ int32 field::get_attack_target(card* pcard, card_vector* v, uint8 chain_attack, 
 			return atype;
 	} else {
 		atype = 4;
-		pv = &player[1 - p].list_mzone;
+		if (pcard->is_affected_by_effect(EFFECT_FRIENDLY_FIRE)) {
+			for (uint8 h = 0; h < 2; ++h) {
+				for (uint32 i = 0; i < 7; ++i) {
+					card* atarget = player[abs(h - p)].list_mzone[i];
+					if (atarget != core.attacker) {
+						attack_target.push_back(atarget);
+					}
+				}
+			}
+			pv = &attack_target;
+		}
+		else {
+			pv = &player[1 - p].list_mzone;
+		}
 	}
 	int32 extra_count = 0;
 	effect_set eset;
@@ -2452,7 +2465,8 @@ int32 field::get_attack_target(card* pcard, card_vector* v, uint8 chain_attack, 
 			continue;
 		if(atype >= 2 && atarget->is_affected_by_effect(EFFECT_IGNORE_BATTLE_TARGET, pcard))
 			continue;
-		mcount++;
+		if(atarget->current.controler != p)
+			mcount++;
 		if(chain_attack && core.chain_attack_target && atarget != core.chain_attack_target)
 			continue;
 		if(select_target && (atype == 2 || atype == 4)) {

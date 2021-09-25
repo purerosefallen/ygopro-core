@@ -2535,6 +2535,11 @@ int32 field::process_battle_command(uint16 step) {
 		core.attack_player = FALSE;
 		core.select_cards.clear();
 		auto atype = get_attack_target(core.attacker, &core.select_cards, core.chain_attack);
+		//if a monster that has EFFECT_FRIENDLY_FIRE (which allows it to attack monsters on its same side of the field) can attack the opponent directly, ask the player whether they want to perform a direct attack or declare an attack on a monster they control
+		if (core.select_cards.size() && core.attacker->direct_attackable) {
+			add_process(PROCESSOR_SELECT_YESNO, 0, 0, 0, infos.turn_player, 31);
+			return FALSE;
+		}
 		// direct attack
 		if(core.attacker->direct_attackable) {
 			if(core.select_cards.size() == 0) {
