@@ -182,6 +182,8 @@ extern "C" DECL_DLLEXPORT void new_tag_card(ptr pduel, uint32 code, uint8 owner,
 extern "C" DECL_DLLEXPORT int32 query_card(ptr pduel, uint8 playerid, uint8 location, uint8 sequence, int32 query_flag, byte* buf, int32 use_cache) {
 	if(playerid != 0 && playerid != 1)
 		return 0;
+	if(location & LOCATION_HAND)
+		query_flag &= (~QUERY_CODE);
 	duel* ptduel = (duel*)pduel;
 	card* pcard = 0;
 	location &= 0x7f;
@@ -244,7 +246,9 @@ extern "C" DECL_DLLEXPORT int32 query_field_count(ptr pduel, uint8 playerid, uin
 extern "C" DECL_DLLEXPORT int32 query_field_card(ptr pduel, uint8 playerid, uint8 location, int32 query_flag, byte* buf, int32 use_cache) {
 	if(playerid != 0 && playerid != 1)
 		return 0;
-	duel* ptduel = (duel*)pduel;
+	if(location & LOCATION_HAND)
+		query_flag &= (~QUERY_CODE);
+	duel *ptduel = (duel *)pduel;
 	auto& player = ptduel->game_field->player[playerid];
 	byte* p = buf;
 	if(location == LOCATION_MZONE) {
