@@ -291,12 +291,12 @@ int32 field::select_unselect_card(uint16 step, uint8 playerid, uint8 cancelable,
 		pduel->write_buffer8((uint8)core.select_cards.size());
 		std::sort(core.select_cards.begin(), core.select_cards.end(), card::card_operation_sort);
 		for(auto& pcard : core.select_cards) {
-			pduel->write_buffer32(pcard->data.code);
+			pduel->write_buffer32(pcard->current.is_location(LOCATION_HAND) ? 0 : pcard->data.code);
 			pduel->write_buffer32(pcard->get_info_location());
 		}
 		pduel->write_buffer8((uint8)core.unselect_cards.size());
 		for(auto& pcard : core.unselect_cards) {
-			pduel->write_buffer32(pcard->data.code);
+			pduel->write_buffer32(pcard->current.is_location(LOCATION_HAND) ? 0 : pcard->data.code);
 			pduel->write_buffer32(pcard->get_info_location());
 		}
 		return FALSE;
