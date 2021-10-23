@@ -4004,3 +4004,6 @@ int32 card::is_can_be_link_material(card* scard) {
 			return FALSE;
 	return TRUE;
 }
+int32 card::get_display_code() {
+	return current.is_location(LOCATION_HAND) ? 0 : data.code;
+}

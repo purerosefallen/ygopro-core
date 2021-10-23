@@ -389,6 +389,8 @@ public:
 	int32 is_can_be_ritual_material(card* scard);
 	int32 is_can_be_xyz_material(card* scard);
 	int32 is_can_be_link_material(card* scard);
+
+	int32 get_display_code();
 };
 
 //Summon Type
