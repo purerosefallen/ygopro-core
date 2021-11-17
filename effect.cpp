@@ -249,7 +249,7 @@ int32 effect::is_activateable(uint8 playerid, const tevent& e, int32 neglect_con
 				if(!(handler->data.type & (TYPE_FIELD | TYPE_PENDULUM)) && is_flag(EFFECT_FLAG_LIMIT_ZONE) && !(zone & (1u << handler->current.sequence)))
 					return FALSE;
 			} else {
-				if(handler->data.type & TYPE_MONSTER) {
+				if((handler->data.type & TYPE_MONSTER) && !is_flag(EFFECT_FLAG2_ACTIVATE_MONSTER_SZONE)) {
 					if(!(handler->data.type & TYPE_PENDULUM))
 						return FALSE;
 					if(!pduel->game_field->is_location_useable(playerid, LOCATION_PZONE, 0)
