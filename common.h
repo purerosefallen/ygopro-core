@@ -8,13 +8,12 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-typedef unsigned long uptr;
+#include <stdint.h>
 typedef unsigned long long uint64;
 typedef unsigned int uint32;
 typedef unsigned short uint16;
 typedef unsigned char uint8;
 typedef unsigned char byte;
-typedef long ptr;
 typedef long long int64;
 typedef int int32;
 typedef short int16;
@@ -187,7 +186,7 @@ struct card_sort {
 #define STATUS_FUTURE_FUSION		0x100000
 #define STATUS_ATTACK_CANCELED		0x200000
 #define STATUS_INITIALIZING			0x400000
-//#define STATUS_ACTIVATED			0x800000
+#define STATUS_TO_HAND_WITHOUT_CONFIRM	0x800000
 #define STATUS_JUST_POS				0x1000000
 #define STATUS_CONTINUOUS_POS		0x2000000
 #define STATUS_FORBIDDEN			0x4000000
