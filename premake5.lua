@@ -11,11 +11,6 @@ project "ocgcore"
         libdirs { LUA_LIB_DIR }
     end
 
-    filter "action:vs*"
-        if not BUILD_LUA then
-            includedirs { "../lua" }
-        end
-
     filter "not action:vs*"
         buildoptions { "-std=c++14" }
 
@@ -24,12 +19,6 @@ project "ocgcore"
 
     filter "system:macosx"
         defines { "LUA_USE_MACOSX" }
-        if not BUILD_LUA then
-            includedirs { "../lua" }
-        end
 
     filter "system:linux"
         defines { "LUA_USE_LINUX" }
-        if not BUILD_LUA then
-            includedirs { "/usr/include/lua5.3" }
-        end
