@@ -13,6 +13,18 @@
 #include "group.h"
 #include "ocgapi.h"
 
+/////zdiy/////
+int32 scriptlib::duel_get_random_number(lua_State* L) {
+	check_param_count(L, 2);
+	duel* pduel = interpreter::get_duel_info(L);
+	int32 min = (int32)lua_tonumber(L, 1);
+	int32 max = (int32)lua_tonumber(L, 2);
+	if (min < 0) min = 0;
+	if (max <= min) max = min + 1;
+	lua_pushinteger(L, pduel->get_next_integer(min, max));
+	return 1;
+}
+/////zdiy/////
 int32 scriptlib::duel_get_master_rule(lua_State * L) {
 	duel* pduel = interpreter::get_duel_info(L);
 	lua_pushinteger(L, pduel->game_field->core.duel_rule);
@@ -4792,6 +4804,9 @@ int32 scriptlib::duel_majestic_copy(lua_State *L) {
 }
 
 static const struct luaL_Reg duellib[] = {
+	/////zdiy/////
+	{ "GetRandomNumber", scriptlib::duel_get_random_number },
+	/////zdiy/////
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },
 	{ "ReadCard", scriptlib::duel_read_card },
 	{ "Exile", scriptlib::duel_exile },

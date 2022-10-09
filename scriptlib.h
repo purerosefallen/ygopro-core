@@ -398,6 +398,9 @@ public:
 	static void open_grouplib(lua_State *L);
 
 	//Duel functions
+	/////zdiy/////
+	static int32 duel_get_random_number(lua_State* L);
+	/////zdiy/////
 	static int32 duel_enable_global_flag(lua_State *L);
 	static int32 duel_get_lp(lua_State *L);
 	static int32 duel_set_lp(lua_State *L);
