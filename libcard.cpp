@@ -3439,6 +3439,10 @@ int32 scriptlib::card_set_spsummon_once(lua_State *L) {
 }
 
 static const struct luaL_Reg cardlib[] = {
+	/////zdiy/////
+	{"IsText",scriptlib::card_is_text},
+	{"IsName",scriptlib::card_is_name},
+	/////zdiy/////
 	//millux
 	{ "IsRitualType", scriptlib::card_is_ritual_type },
 	{ "SetEntityCode", scriptlib::card_set_entity_code },
