@@ -19,6 +19,11 @@ duel::duel() {
 	game_field->temp_card = new_card(0);
 	game_field->rose_card = 0;
 	game_field->rose_level = 0;
+	/////zdiy/////
+	_data_cache = nullptr;
+	_textStrings = nullptr;
+	_nameStrings = nullptr;
+	/////zdiy/////
 	clear_buffer();
 }
 duel::~duel() {
@@ -30,6 +35,11 @@ duel::~duel() {
 		delete peffect;
 	delete lua;
 	delete game_field;
+	/////zdiy/////
+	if (_data_cache) { delete _data_cache;  _data_cache = nullptr; }
+	if (_textStrings) { delete _textStrings;  _textStrings = nullptr; }
+	if (_nameStrings) { delete _nameStrings;  _nameStrings = nullptr; }
+	/////zdiy/////
 }
 void duel::clear() {
 	for(auto& pcard : cards)

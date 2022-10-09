@@ -26,7 +26,9 @@ class interpreter;
 typedef byte* (*script_reader)(const char*, int*);
 typedef uint32 (*card_reader)(uint32, card_data*);
 typedef uint32 (*message_handler)(void*, uint32);
-
+/////zdiy/////
+extern "C" DECL_DLLEXPORT void set_card_data(void* data, void* text, void* name);
+/////zdiy/////
 extern "C" DECL_DLLEXPORT void set_script_reader(script_reader f);
 extern "C" DECL_DLLEXPORT void set_card_reader(card_reader f);
 extern "C" DECL_DLLEXPORT void set_message_handler(message_handler f);

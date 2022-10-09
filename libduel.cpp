@@ -12,7 +12,70 @@
 #include "effect.h"
 #include "group.h"
 #include "ocgapi.h"
+/////zdiy/////
+int32 scriptlib::duel_get_random_group(lua_State* L) {
+	check_param_count(L, 4);
+	uint32 playerid = (uint32)lua_tointeger(L, 1);
+	if (playerid >= PLAYER_NONE) return 0;
+	duel* pduel = interpreter::get_duel_info(L);
+	uint32 count = (uint32)lua_tonumber(L, 2);
+	uint32 type = (uint32)lua_tointeger(L, 3);
+	uint32 set_code = 0;
+	if (!lua_isnil(L, 4))
+		set_code = (uint32)lua_tointeger(L, 4);
+	if (count < 0)count = 0;
+	else if (count > 20) count = 20;
+	group* pgroup = pduel->new_group();
+	uint32_t index = 0;
+	std::unordered_map<int32_t, uint32_t>* p_codes = new std::unordered_map<int32_t, uint32_t>();
+	for (auto iter = pduel->_data_cache->begin(); iter != pduel->_data_cache->end(); ++iter) {
+		card_data* card = iter->second;
+		auto _type = card->type;
+		auto setcode = card->setcode;
+		bool isSetCode = false;
+		if (set_code > 0) {
+			uint32 settype = set_code & 0xfff;
+			uint32 setsubtype = set_code & 0xf000;
+			while (setcode) {
+				if ((setcode & 0xfff) == settype && (setcode & 0xf000 & setsubtype) == setsubtype) {
+					isSetCode = true;
+					break;
+				}
+				setcode = setcode >> 16;
+			}
+		}
+		if ((_type & type) && !(_type & TYPE_TOKEN) && (set_code > 0 ? isSetCode : true)) {
+			p_codes->insert(std::unordered_map<int32_t, uint32_t>::value_type(index, card->code));
+			++index;
+		}
+	}
+	if (p_codes->size() <= 0) { interpreter::group2value(L, pgroup); delete p_codes; return 1; }
+	uint32_t randMin = 0;
+	uint32_t randMax = p_codes->size() - 1;
+	for (int32_t i = 0; i < count; ++i)
+	{
+		index = pduel->get_next_integer(randMin, randMax);
+		uint32_t code = 0;
+		auto codeMap = p_codes->find(index);
+		if (codeMap != p_codes->end()) {
+			code = codeMap->second;
+			if (!code || code == 0) {
+				--i;
+				continue;
+			}
+			card* pcard = pduel->new_card(code);
+			pcard->owner = playerid;
+			pcard->current.location = 0;
+			pcard->current.controler = playerid;
+			pgroup->container.insert(pcard);
+		}
+	}
+	interpreter::group2value(L, pgroup);
+	delete p_codes;
+	return 1;
+}
 
+/////zdiy/////
 int32 scriptlib::duel_get_master_rule(lua_State * L) {
 	duel* pduel = interpreter::get_duel_info(L);
 	lua_pushinteger(L, pduel->game_field->core.duel_rule);
@@ -4792,6 +4855,9 @@ int32 scriptlib::duel_majestic_copy(lua_State *L) {
 }
 
 static const struct luaL_Reg duellib[] = {
+	/////zdiy/////
+	{ "GetRandomGroup", scriptlib::duel_get_random_group },
+	////zdiy/////
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },
 	{ "ReadCard", scriptlib::duel_read_card },
 	{ "Exile", scriptlib::duel_exile },

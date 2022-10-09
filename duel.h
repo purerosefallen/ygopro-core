@@ -12,6 +12,9 @@
 #include "mtrandom.h"
 #include <set>
 #include <unordered_set>
+/////zdiy/////
+#include<unordered_map>
+/////zdiy/////
 
 class card;
 class group;
@@ -35,6 +38,11 @@ public:
 	std::unordered_set<group*> sgroups;
 	std::unordered_set<effect*> effects;
 	std::unordered_set<effect*> uncopy;
+	/////zdiy/////
+	std::unordered_map<uint32_t, struct card_data*>* _data_cache;
+	std::unordered_map<unsigned int, std::wstring*>* _textStrings;
+	std::unordered_map<unsigned int, std::wstring*>* _nameStrings;
+	/////zdiy/////
 	
 	duel();
 	~duel();

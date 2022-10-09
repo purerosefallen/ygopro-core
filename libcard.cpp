@@ -11,7 +11,47 @@
 #include "card.h"
 #include "effect.h"
 #include "group.h"
+/////zdiy/////
+#include"../gframe/bufferio.h"
+/////zdiy/////
 
+/////zdiy/////
+int32 scriptlib::card_is_text(lua_State* L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	card* pcard = *(card**)lua_touserdata(L, 1);
+	wchar_t strKeyBuffer[1024];
+	const char* key = lua_tostring(L, 2);
+	BufferIO::DecodeUTF8(key, strKeyBuffer);
+	duel* pduel = interpreter::get_duel_info(L);
+	uint32 result = FALSE;
+	auto _textStrings = pduel->_textStrings;
+	if (_textStrings->find(pcard->get_code()) != _textStrings->end()) {
+		std::wstring des = *_textStrings->find(pcard->get_code())->second;
+		if (des.find(strKeyBuffer) != std::wstring::npos)result = TRUE;
+	}
+	lua_pushboolean(L, result);
+	return 1;
+}
+
+int32 scriptlib::card_is_name(lua_State* L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	card* pcard = *(card**)lua_touserdata(L, 1);
+	wchar_t strKeyBuffer[1024];
+	const char* key = lua_tostring(L, 2);
+	BufferIO::DecodeUTF8(key, strKeyBuffer);
+	duel* pduel = interpreter::get_duel_info(L);
+	uint32 result = FALSE;
+	auto _nameStrings = pduel->_nameStrings;
+	if (_nameStrings->find(pcard->get_code()) != _nameStrings->end()) {
+		std::wstring des = *_nameStrings->find(pcard->get_code())->second;
+		if (des.find(strKeyBuffer) != std::wstring::npos)result = TRUE;
+	}
+	lua_pushboolean(L, result);
+	return 1;
+}
+/////zdiy/////
 int32 scriptlib::card_is_ritual_type(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);

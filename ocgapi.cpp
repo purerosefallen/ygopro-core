@@ -20,7 +20,19 @@ static card_reader creader = default_card_reader;
 static message_handler mhandler = default_message_handler;
 static byte buffer[0x20000];
 static std::set<duel*> duel_set;
+//////zdiy/////
+std::unordered_map<uint32_t, struct card_data*>* _data_cache;
+std::unordered_map<unsigned int, std::wstring*>* _textStrings;
+std::unordered_map<unsigned int, std::wstring*>* _nameStrings;
+//////zdiy/////
 
+//////zdiy/////
+extern "C" DECL_DLLEXPORT void set_card_data(void* data, void* text, void* name) {
+	_data_cache = (std::unordered_map<uint32_t, struct card_data*>*)data;
+	_textStrings = (std::unordered_map<unsigned int, std::wstring*>*)text;
+	_nameStrings = (std::unordered_map<unsigned int, std::wstring*>*) name;
+}
+//////zdiy/////
 extern "C" DECL_DLLEXPORT void set_script_reader(script_reader f) {
 	sreader = f;
 }
@@ -62,6 +74,11 @@ extern "C" DECL_DLLEXPORT intptr_t create_duel(uint32 seed) {
 	duel_set.insert(pduel);
 	pduel->random.reset(seed);
 	pduel->lua->preloaded = FALSE;
+	/////zdiy/////
+	pduel->_data_cache = _data_cache;
+	pduel->_textStrings = _textStrings;
+	pduel->_nameStrings = _nameStrings;
+	/////zdiy/////
 	return (intptr_t)pduel;
 }
 extern "C" DECL_DLLEXPORT void start_duel(intptr_t pduel, int32 options) {
