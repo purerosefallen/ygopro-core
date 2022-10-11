@@ -13,7 +13,6 @@
 #include "group.h"
 #include "ocgapi.h"
 
-/////zdiy/////
 int32 scriptlib::duel_get_random_number(lua_State* L) {
 	check_param_count(L, 2);
 	duel* pduel = interpreter::get_duel_info(L);
@@ -24,7 +23,7 @@ int32 scriptlib::duel_get_random_number(lua_State* L) {
 	lua_pushinteger(L, pduel->get_next_integer(min, max));
 	return 1;
 }
-/////zdiy/////
+
 int32 scriptlib::duel_get_master_rule(lua_State * L) {
 	duel* pduel = interpreter::get_duel_info(L);
 	lua_pushinteger(L, pduel->game_field->core.duel_rule);
@@ -4804,9 +4803,6 @@ int32 scriptlib::duel_majestic_copy(lua_State *L) {
 }
 
 static const struct luaL_Reg duellib[] = {
-	/////zdiy/////
-	{ "GetRandomNumber", scriptlib::duel_get_random_number },
-	/////zdiy/////
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },
 	{ "ReadCard", scriptlib::duel_read_card },
 	{ "Exile", scriptlib::duel_exile },
@@ -4819,6 +4815,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "AnnounceCardFilter", scriptlib::duel_announce_card }, // For compat
 	{ "ResetTimeLimit", scriptlib::duel_reset_time_limit },
 	{ "SetSummonCancelable", scriptlib::duel_set_summon_cancelable },
+	{ "GetRandomNumber", scriptlib::duel_get_random_number },
 
 	{ "EnableGlobalFlag", scriptlib::duel_enable_global_flag },
 	{ "GetLP", scriptlib::duel_get_lp },

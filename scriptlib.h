@@ -38,6 +38,7 @@ public:
 	static int32 duel_load_script(lua_State *L);
 	static int32 duel_reset_time_limit(lua_State *L);
 	static int32 duel_set_summon_cancelable(lua_State *L);
+	static int32 duel_get_random_number(lua_State* L);
 	//card lib
 	static int32 card_get_code(lua_State *L);
 	static int32 card_get_origin_code(lua_State *L);
@@ -398,9 +399,6 @@ public:
 	static void open_grouplib(lua_State *L);
 
 	//Duel functions
-	/////zdiy/////
-	static int32 duel_get_random_number(lua_State* L);
-	/////zdiy/////
 	static int32 duel_enable_global_flag(lua_State *L);
 	static int32 duel_get_lp(lua_State *L);
 	static int32 duel_set_lp(lua_State *L);
