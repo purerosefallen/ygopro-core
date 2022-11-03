@@ -843,8 +843,7 @@ uint32 field::get_linked_zone(int32 playerid) {
 }
 uint32 field::get_rule_zone_fromex(int32 playerid, card* pcard) {
 	if(core.duel_rule >= 4) {
-		if(core.duel_rule >= 5 && pcard && (pcard->data.type & (TYPE_FUSION | TYPE_SYNCHRO | TYPE_XYZ))
-			&& (pcard->is_position(POS_FACEDOWN) || !(pcard->data.type & TYPE_PENDULUM)))
+		if(core.duel_rule >= 5 && pcard && (pcard->data.type & (TYPE_FUSION | TYPE_SYNCHRO | TYPE_XYZ | TYPE_PENDULUM)))
 			return 0x7f;
 		if(is_player_affected_by_effect(playerid, EFFECT_EXTRA_TOMAIN_KOISHI) || pcard && pcard->is_affected_by_effect(EFFECT_EXTRA_TOMAIN_KOISHI))
 			return 0x7f;
