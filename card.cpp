@@ -1518,7 +1518,7 @@ int32 card::get_old_union_count() {
 void card::xyz_overlay(card_set* materials) {
 	if(materials->size() == 0)
 		return;
-	card_set des, leave_grave;
+	card_set des, leave_grave, leave_deck;
 	field::card_vector cv;
 	for(auto& pcard : *materials)
 		cv.push_back(pcard);
@@ -1588,12 +1588,20 @@ void card::xyz_overlay(card_set* materials) {
 		if(pcard->previous.location == LOCATION_GRAVE) {
 			leave_grave.insert(pcard);
 			pduel->game_field->raise_single_event(pcard, 0, EVENT_LEAVE_GRAVE, pduel->game_field->core.reason_effect, pcard->current.reason, pduel->game_field->core.reason_player, 0, 0);
+		} else if(pcard->previous.location == LOCATION_DECK || pcard->previous.location == LOCATION_EXTRA) {
+			leave_deck.insert(pcard);
+			pduel->game_field->raise_single_event(pcard, 0, EVENT_LEAVE_DECK, pduel->game_field->core.reason_effect, pcard->current.reason, pduel->game_field->core.reason_player, 0, 0);
 		}
 		pduel->write_buffer32(pcard->get_info_location());
 		pduel->write_buffer32(pcard->current.reason);
 	}
-	if(leave_grave.size()) {
-		pduel->game_field->raise_event(&leave_grave, EVENT_LEAVE_GRAVE, pduel->game_field->core.reason_effect, REASON_XYZ + REASON_MATERIAL, pduel->game_field->core.reason_player, 0, 0);
+	if(leave_grave.size() || leave_deck.size()) {
+		if(leave_grave.size()) {
+			pduel->game_field->raise_event(&leave_grave, EVENT_LEAVE_GRAVE, pduel->game_field->core.reason_effect, REASON_XYZ + REASON_MATERIAL, pduel->game_field->core.reason_player, 0, 0);
+		}
+		if(leave_deck.size()) {
+			pduel->game_field->raise_event(&leave_deck, EVENT_LEAVE_DECK, pduel->game_field->core.reason_effect, REASON_XYZ + REASON_MATERIAL, pduel->game_field->core.reason_player, 0, 0);
+		}
 		pduel->game_field->process_single_event();
 		pduel->game_field->process_instant_event();
 	}
@@ -3024,6 +3032,16 @@ int32 card::is_not_tuner(card* scard) {
 	filter_effect(EFFECT_NONTUNER, &eset);
 	for(int32 i = 0; i < eset.size(); ++i)
 		if(!eset[i]->value || eset[i]->get_value(scard))
+			return TRUE;
+	return FALSE;
+}
+int32 card::is_tuner(card* scard) {
+	if (get_synchro_type() & TYPE_TUNER)
+		return TRUE;
+	effect_set eset;
+	filter_effect(EFFECT_TUNER, &eset);
+	for (int32 i = 0; i < eset.size(); ++i)
+		if (!eset[i]->value || eset[i]->get_value(scard))
 			return TRUE;
 	return FALSE;
 }
