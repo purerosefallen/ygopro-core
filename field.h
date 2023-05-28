@@ -263,6 +263,7 @@ struct processor {
 	std::unordered_set<card*> unique_cards[2];
 	std::unordered_map<uint32, uint32> effect_count_code;
 	std::unordered_map<uint32, uint32> effect_count_code_duel;
+	std::unordered_map<uint32, uint32> effect_count_code_chain;
 	std::unordered_map<uint32, uint32> spsummon_once_map[2];
 	std::multimap<int32, card*, std::greater<int32>> xmaterial_lst;
 
@@ -482,6 +483,7 @@ public:
 	void attack_all_target_check();
 	int32 get_must_material_list(uint8 playerid, uint32 limit, card_set* must_list);
 	int32 check_must_material(group* mg, uint8 playerid, uint32 limit);
+	void get_synchro_material(uint8 playerid, card_set* material, effect* ptuner = 0);
 	int32 check_synchro_material(card* pcard, int32 findex1, int32 findex2, int32 min, int32 max, card* smat, group* mg);
 	int32 check_tuner_material(card* pcard, card* tuner, int32 findex1, int32 findex2, int32 min, int32 max, card* smat, group* mg);
 	int32 check_other_synchro_material(const card_vector& nsyn, int32 lv, int32 min, int32 max, int32 mcount);
