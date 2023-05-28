@@ -1101,6 +1101,7 @@ void field::swap_deck_and_grave(uint8 playerid) {
 		pcard->apply_field_effect();
 		pcard->enable_field_effect(true);
 		pcard->reset(RESET_TODECK, RESET_EVENT);
+		pcard->set_status(STATUS_PROC_COMPLETE, FALSE);
 	}
 	for(auto& pcard : ex) {
 		pcard->current.position = POS_FACEDOWN_DEFENSE;
@@ -1111,6 +1112,7 @@ void field::swap_deck_and_grave(uint8 playerid) {
 		pcard->apply_field_effect();
 		pcard->enable_field_effect(true);
 		pcard->reset(RESET_TODECK, RESET_EVENT);
+		pcard->set_status(STATUS_PROC_COMPLETE, FALSE);
 	}
 	player[playerid].list_extra.insert(player[playerid].list_extra.end() - player[playerid].extra_p_count, ex.begin(), ex.end());
 	reset_sequence(playerid, LOCATION_GRAVE);
@@ -1342,20 +1344,32 @@ void field::reset_chain() {
 	}
 }
 void field::add_effect_code(uint32 code, uint32 playerid) {
-	auto& count_map = (code & EFFECT_COUNT_CODE_DUEL) ? core.effect_count_code_duel : core.effect_count_code;
-	count_map[code + (playerid << 30)]++;
+	auto* count_map = &core.effect_count_code;
+	if(code & EFFECT_COUNT_CODE_DUEL)
+		count_map = &core.effect_count_code_duel;
+	else if(code & EFFECT_COUNT_CODE_CHAIN)
+		count_map = &core.effect_count_code_chain;
+	(*count_map)[code + (playerid << 30)]++;
 }
 uint32 field::get_effect_code(uint32 code, uint32 playerid) {
-	auto& count_map = (code & EFFECT_COUNT_CODE_DUEL) ? core.effect_count_code_duel : core.effect_count_code;
-	auto iter = count_map.find(code + (playerid << 30));
-	if(iter == count_map.end())
+	auto* count_map = &core.effect_count_code;
+	if(code & EFFECT_COUNT_CODE_DUEL)
+		count_map = &core.effect_count_code_duel;
+	else if(code & EFFECT_COUNT_CODE_CHAIN)
+		count_map = &core.effect_count_code_chain;
+	auto iter = count_map->find(code + (playerid << 30));
+	if(iter == count_map->end())
 		return 0;
 	return iter->second;
 }
 void field::dec_effect_code(uint32 code, uint32 playerid) {
-	auto& count_map = (code & EFFECT_COUNT_CODE_DUEL) ? core.effect_count_code_duel : core.effect_count_code;
-	auto iter = count_map.find(code + (playerid << 30));
-	if(iter == count_map.end())
+	auto* count_map = &core.effect_count_code;
+	if(code & EFFECT_COUNT_CODE_DUEL)
+		count_map = &core.effect_count_code_duel;
+	else if(code & EFFECT_COUNT_CODE_CHAIN)
+		count_map = &core.effect_count_code_chain;
+	auto iter = count_map->find(code + (playerid << 30));
+	if(iter == count_map->end())
 		return;
 	if(iter->second > 0)
 		iter->second--;
@@ -2533,6 +2547,36 @@ int32 field::check_must_material(group* mg, uint8 playerid, uint32 limit) {
 			return FALSE;
 	return TRUE;
 }
+void field::get_synchro_material(uint8 playerid, card_set* material, effect* ptuner) {
+	if(ptuner && ptuner->value) {
+		int32 location = ptuner->value;
+		if(location & LOCATION_MZONE) {
+			for(auto& pcard : player[playerid].list_mzone) {
+				if(pcard)
+					material->insert(pcard);
+			}
+		}
+		if(location & LOCATION_HAND) {
+			for(auto& pcard : player[playerid].list_hand) {
+				if(pcard)
+					material->insert(pcard);
+			}
+		}
+	} else {
+		for(auto& pcard : player[playerid].list_mzone) {
+			if(pcard)
+				material->insert(pcard);
+		}
+		for(auto& pcard : player[1 - playerid].list_mzone) {
+			if(pcard && pcard->is_affected_by_effect(EFFECT_EXTRA_SYNCHRO_MATERIAL))
+				material->insert(pcard);
+		}
+		for(auto& pcard : player[playerid].list_hand) {
+			if(pcard && pcard->is_affected_by_effect(EFFECT_EXTRA_SYNCHRO_MATERIAL))
+				material->insert(pcard);
+		}
+	}
+}
 int32 field::check_synchro_material(card* pcard, int32 findex1, int32 findex2, int32 min, int32 max, card* smat, group* mg) {
 	if(mg) {
 		for(auto& tuner : mg->container) {
@@ -2540,11 +2584,11 @@ int32 field::check_synchro_material(card* pcard, int32 findex1, int32 findex2, i
 				return TRUE;
 		}
 	} else {
-		for(uint8 p = 0; p < 2; ++p) {
-			for(auto& tuner : player[p].list_mzone) {
-				if(check_tuner_material(pcard, tuner, findex1, findex2, min, max, smat, mg))
-					return TRUE;
-			}
+		card_set material;
+		get_synchro_material(pcard->current.controler, &material);
+		for(auto& tuner : material) {
+			if(check_tuner_material(pcard, tuner, findex1, findex2, min, max, smat, mg))
+				return TRUE;
 		}
 	}
 	return FALSE;
@@ -2717,13 +2761,8 @@ int32 field::check_tuner_material(card* pcard, card* tuner, int32 findex1, int32
 			pm->sum_param = pm->get_synchro_level(pcard);
 		}
 	} else {
-		card_vector cv;
-		if(location & LOCATION_MZONE) {
-			cv.insert(cv.end(), player[0].list_mzone.begin(), player[0].list_mzone.end());
-			cv.insert(cv.end(), player[1].list_mzone.begin(), player[1].list_mzone.end());
-		}
-		if(location & LOCATION_HAND)
-			cv.insert(cv.end(), player[playerid].list_hand.begin(), player[playerid].list_hand.end());
+		card_set cv;
+		get_synchro_material(playerid, &cv, ptuner);
 		for(auto& pm : cv) {
 			if(!pm || pm == tuner || pm == smat || must_list.find(pm) != must_list.end() || !pm->is_can_be_synchro_material(pcard, tuner))
 				continue;
