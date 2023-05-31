@@ -4180,6 +4180,28 @@ int32 scriptlib::duel_toss_coin(lua_State * L) {
 		return count;
 	});
 }
+int32 scriptlib::duel_get_random_number(lua_State * L) {
+	//check_action_permission(L); Don't check action permission
+	duel* pduel = interpreter::get_duel_info(L);
+	return lua_yieldk(L, 0, (lua_KContext)pduel, [](lua_State *L, int32 status, lua_KContext ctx) {
+		duel* pduel = (duel*)ctx;
+		int32 min = 0;
+		int32 max = 2147483647;
+		//Duel.GetRandomNumber() returns a number from [0,2147483647)
+		if(lua_gettop(L) > 1) {
+			//Duel.GetRandomNumber(n,m) returns a number from [n,m]
+			min = lua_tointeger(L, 1);
+			max = lua_tointeger(L, 2) + 1;
+		}
+		else if(lua_gettop(L) > 0) {
+			// Duel.GetRandomNumber(n) returns a number from [1,n]
+			min = 1;
+			max = lua_tointeger(L, 1) + 1;
+		}
+		lua_pushinteger(L, pduel->get_next_integer(min, max));
+		return 1;
+	});
+}
 int32 scriptlib::duel_toss_dice(lua_State * L) {
 	check_action_permission(L);
 	check_param_count(L, 2);
@@ -5034,6 +5056,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "AnnounceCoin", scriptlib::duel_announce_coin },
 	{ "TossCoin", scriptlib::duel_toss_coin },
 	{ "TossDice", scriptlib::duel_toss_dice },
+	{ "GetRandomNumber", scriptlib::duel_get_random_number },
 	{ "RockPaperScissors", scriptlib::duel_rock_paper_scissors },
 	{ "GetCoinResult", scriptlib::duel_get_coin_result },
 	{ "GetDiceResult", scriptlib::duel_get_dice_result },
