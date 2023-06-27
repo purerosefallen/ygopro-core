@@ -1101,6 +1101,7 @@ void field::swap_deck_and_grave(uint8 playerid) {
 		pcard->apply_field_effect();
 		pcard->enable_field_effect(true);
 		pcard->reset(RESET_TODECK, RESET_EVENT);
+		pcard->set_status(STATUS_PROC_COMPLETE, FALSE);
 	}
 	for(auto& pcard : ex) {
 		pcard->current.position = POS_FACEDOWN_DEFENSE;
@@ -1111,6 +1112,7 @@ void field::swap_deck_and_grave(uint8 playerid) {
 		pcard->apply_field_effect();
 		pcard->enable_field_effect(true);
 		pcard->reset(RESET_TODECK, RESET_EVENT);
+		pcard->set_status(STATUS_PROC_COMPLETE, FALSE);
 	}
 	player[playerid].list_extra.insert(player[playerid].list_extra.end() - player[playerid].extra_p_count, ex.begin(), ex.end());
 	reset_sequence(playerid, LOCATION_GRAVE);
@@ -1342,20 +1344,32 @@ void field::reset_chain() {
 	}
 }
 void field::add_effect_code(uint32 code, uint32 playerid) {
-	auto& count_map = (code & EFFECT_COUNT_CODE_DUEL) ? core.effect_count_code_duel : core.effect_count_code;
-	count_map[code + (playerid << 30)]++;
+	auto* count_map = &core.effect_count_code;
+	if(code & EFFECT_COUNT_CODE_DUEL)
+		count_map = &core.effect_count_code_duel;
+	else if(code & EFFECT_COUNT_CODE_CHAIN)
+		count_map = &core.effect_count_code_chain;
+	(*count_map)[code + (playerid << 30)]++;
 }
 uint32 field::get_effect_code(uint32 code, uint32 playerid) {
-	auto& count_map = (code & EFFECT_COUNT_CODE_DUEL) ? core.effect_count_code_duel : core.effect_count_code;
-	auto iter = count_map.find(code + (playerid << 30));
-	if(iter == count_map.end())
+	auto* count_map = &core.effect_count_code;
+	if(code & EFFECT_COUNT_CODE_DUEL)
+		count_map = &core.effect_count_code_duel;
+	else if(code & EFFECT_COUNT_CODE_CHAIN)
+		count_map = &core.effect_count_code_chain;
+	auto iter = count_map->find(code + (playerid << 30));
+	if(iter == count_map->end())
 		return 0;
 	return iter->second;
 }
 void field::dec_effect_code(uint32 code, uint32 playerid) {
-	auto& count_map = (code & EFFECT_COUNT_CODE_DUEL) ? core.effect_count_code_duel : core.effect_count_code;
-	auto iter = count_map.find(code + (playerid << 30));
-	if(iter == count_map.end())
+	auto* count_map = &core.effect_count_code;
+	if(code & EFFECT_COUNT_CODE_DUEL)
+		count_map = &core.effect_count_code_duel;
+	else if(code & EFFECT_COUNT_CODE_CHAIN)
+		count_map = &core.effect_count_code_chain;
+	auto iter = count_map->find(code + (playerid << 30));
+	if(iter == count_map->end())
 		return;
 	if(iter->second > 0)
 		iter->second--;
@@ -1880,6 +1894,7 @@ void field::get_ritual_material(uint8 playerid, effect* peffect, card_set* mater
 	for(auto& pcard : player[1 - playerid].list_mzone) {
 		if(pcard && pcard->is_affect_by_effect(peffect)
 		        && (pcard->is_affected_by_effect(EFFECT_EXTRA_RELEASE) || is_player_affected_by_effect(playerid, EFFECT_SEA_PULSE))
+						&& pcard->is_position(POS_FACEUP)
 		        && pcard->is_releasable_by_nonsummon(playerid) && pcard->is_releasable_by_effect(playerid, peffect)
 				&& (no_level || pcard->get_level() > 0 || pcard->is_affected_by_effect(EFFECT_MINIATURE_GARDEN_GIRL)))
 			material->insert(pcard);
