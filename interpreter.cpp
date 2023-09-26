@@ -22,31 +22,21 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	call_depth = 0;
 	disable_action_check = 0;
 	//Initial
+#ifdef YGOPRO_NO_LUA_SAFE
 	luaL_openlibs(lua_state);
-#ifndef YGOPRO_NO_LUA_SAFE
-	lua_pushnil(lua_state);
-	lua_setglobal(lua_state, "io");
-	lua_pushnil(lua_state);
-	lua_setglobal(lua_state, "os");
-	lua_pushnil(lua_state);
-	lua_setglobal(lua_state, "package");
-	lua_pushnil(lua_state);
-	lua_setglobal(lua_state, "debug");
-	// lua_pushnil(lua_state);
-	// lua_setglobal(lua_state, "coroutine");
-	luaL_getsubtable(lua_state, LUA_REGISTRYINDEX, "_LOADED");
-	lua_pushnil(lua_state);
-	lua_setfield(lua_state, -2, "io");
-	lua_pushnil(lua_state);
-	lua_setfield(lua_state, -2, "os");
-	lua_pushnil(lua_state);
-	lua_setfield(lua_state, -2, "package");
-	lua_pushnil(lua_state);
-	lua_setfield(lua_state, -2, "debug");
-	// lua_pushnil(lua_state);
-	// lua_setfield(lua_state, -2, "coroutine");
+#else
+	luaL_requiref(lua_state, "base", luaopen_base, 0);
 	lua_pop(lua_state, 1);
+	luaL_requiref(lua_state, "string", luaopen_string, 1);
+	lua_pop(lua_state, 1);
+	luaL_requiref(lua_state, "utf8", luaopen_utf8, 1);
+	lua_pop(lua_state, 1);
+	luaL_requiref(lua_state, "table", luaopen_table, 1);
+	lua_pop(lua_state, 1);
+	luaL_requiref(lua_state, "math", luaopen_math, 1);
 #endif
+	lua_pop(lua_state, 1);
+
 	//add bit lib back
 	lua_getglobal(lua_state, "bit32");
 	lua_setglobal(lua_state, "bit");
@@ -59,6 +49,7 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	//extra scripts
 	load_script("./script/constant.lua");
 	load_script("./script/utility.lua");
+	load_script("./script/procedure.lua");
 	//load kpro constant
 	//card data constants
 	lua_pushinteger(lua_state, CARDDATA_CODE);
@@ -682,7 +673,7 @@ int32 interpreter::call_coroutine(int32 f, uint32 param_count, uint32 * yield_va
 	int32 result = lua_resume(rthread, 0, param_count);
 	int32 nresults = lua_gettop(rthread);
 #endif
-	if (result == 0) {
+	if (result == LUA_OK) {
 		coroutines.erase(f);
 		if(yield_value) {
 			if(nresults == 0)
