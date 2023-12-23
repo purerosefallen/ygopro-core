@@ -46,6 +46,7 @@ int32 scriptlib::group_delete(lua_State *L) {
 	group* pgroup = *(group**) lua_touserdata(L, 1);
 	if(pgroup->is_readonly != 2)
 		return 0;
+	pgroup->is_iterator_dirty = true;
 	pgroup->is_readonly = 0;
 	pduel->sgroups.insert(pgroup);
 	return 0;
@@ -66,6 +67,7 @@ int32 scriptlib::group_clear(lua_State *L) {
 	check_param(L, PARAM_TYPE_GROUP, 1);
 	group* pgroup = *(group**) lua_touserdata(L, 1);
 	if (pgroup->is_readonly != 1) {
+		pgroup->is_iterator_dirty = true;
 		pgroup->container.clear();
 	}
 	return 0;
@@ -75,6 +77,7 @@ int32 scriptlib::group_add_card(lua_State *L) {
 	check_param(L, PARAM_TYPE_GROUP, 1);
 	group* pgroup = *(group**) lua_touserdata(L, 1);
 	if (pgroup->is_readonly != 1) {
+		pgroup->is_iterator_dirty = true;
 		for(int32 i = 2; i <= lua_gettop(L); ++i) {
 			if(!lua_isnil(L, i)) {
 				if(check_param(L, PARAM_TYPE_CARD, i, TRUE)) {
@@ -96,6 +99,7 @@ int32 scriptlib::group_remove_card(lua_State *L) {
 	check_param(L, PARAM_TYPE_GROUP, 1);
 	group* pgroup = *(group**) lua_touserdata(L, 1);
 	if (pgroup->is_readonly != 1) {
+		pgroup->is_iterator_dirty = true;
 		for(int32 i = 2; i <= lua_gettop(L); ++i) {
 			if(!lua_isnil(L, i)) {
 				if(check_param(L, PARAM_TYPE_CARD, i, TRUE)) {
@@ -118,6 +122,9 @@ int32 scriptlib::group_get_next(lua_State *L) {
 	check_param_count(L, 1);
 	check_param(L, PARAM_TYPE_GROUP, 1);
 	group* pgroup = *(group**) lua_touserdata(L, 1);
+	if (pgroup->is_iterator_dirty) {
+		return luaL_error(L, "Called Group.GetNext without calling Group.GetFirst first.");
+	}
 	if(pgroup->it == pgroup->container.end())
 		lua_pushnil(L);
 	else {
@@ -133,6 +140,7 @@ int32 scriptlib::group_get_first(lua_State *L) {
 	check_param_count(L, 1);
 	check_param(L, PARAM_TYPE_GROUP, 1);
 	group* pgroup = *(group**) lua_touserdata(L, 1);
+	pgroup->is_iterator_dirty = false;
 	if (pgroup->container.size()) {
 		pgroup->it = pgroup->container.begin();
 		interpreter::card2value(L, (*(pgroup->it)));
@@ -207,7 +215,7 @@ int32 scriptlib::group_filter_count(lua_State *L) {
 	uint32 count = 0;
 	for (auto& pcard : cset) {
 		if(pduel->lua->check_matching(pcard, 2, extraargs))
-			count++;
+			++count;
 	}
 	lua_pushinteger(L, count);
 	return 1;
@@ -292,7 +300,7 @@ int32 scriptlib::group_select_unselect(lua_State *L) {
 	check_param_count(L, 3);
 	check_param(L, PARAM_TYPE_GROUP, 1);
 	group* select_group = *(group**)lua_touserdata(L, 1);
-	group* unselect_group = 0;
+	group* unselect_group = nullptr;
 	if(check_param(L, PARAM_TYPE_GROUP, 2, TRUE))
 		unselect_group = *(group**)lua_touserdata(L, 2);
 	duel* pduel = select_group->pduel;
@@ -414,7 +422,7 @@ int32 scriptlib::group_is_exists(lua_State *L) {
 	uint32 result = FALSE;
 	for (auto& pcard : cset) {
 		if(pduel->lua->check_matching(pcard, 2, extraargs)) {
-			fcount++;
+			++fcount;
 			if(fcount >= count) {
 				result = TRUE;
 				break;
@@ -654,7 +662,7 @@ int32 scriptlib::group_remove(lua_State *L) {
 	check_param_count(L, 3);
 	check_param(L, PARAM_TYPE_GROUP, 1);
 	check_param(L, PARAM_TYPE_FUNCTION, 2);
-	card* pexception = 0;
+	card* pexception = nullptr;
 	if(!lua_isnil(L, 3)) {
 		check_param(L, PARAM_TYPE_CARD, 3);
 		pexception = *(card**) lua_touserdata(L, 3);
@@ -664,11 +672,13 @@ int32 scriptlib::group_remove(lua_State *L) {
 	uint32 extraargs = lua_gettop(L) - 3;
 	if(pgroup->is_readonly == 1)
 		return 0;
+	pgroup->is_iterator_dirty = true;
 	for (auto cit = pgroup->container.begin(); cit != pgroup->container.end();) {
-		auto rm = cit++;
-		if((*rm) != pexception && pduel->lua->check_matching(*rm, 2, extraargs)) {
-			pgroup->container.erase(rm);
+		if((*cit) != pexception && pduel->lua->check_matching(*cit, 2, extraargs)) {
+			cit = pgroup->container.erase(cit);
 		}
+		else
+			++cit;
 	}
 	return 0;
 }
@@ -733,7 +743,7 @@ int32 scriptlib::group_get_bin_class_count(lua_State *L) {
 	int32 ans = 0;
 	while(er) {
 		er &= er - 1;
-		ans++;
+		++ans;
 	}
 	lua_pushinteger(L, ans);
 	return 1;
