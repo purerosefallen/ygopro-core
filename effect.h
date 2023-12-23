@@ -27,41 +27,41 @@ enum effect_flag2 : uint32;
 
 class effect {
 public:
-	int32 ref_handle;
-	duel* pduel;
-	card* owner;
-	card* handler;
-	uint8 effect_owner;
-	uint32 description;
-	uint32 code;
-	uint32 flag[2];
-	uint32 id;
-	uint16 type;
-	uint16 copy_id;
-	uint16 range;
-	uint16 s_range;
-	uint16 o_range;
-	uint8 count_limit;
-	uint8 count_limit_max;
-	uint16 reset_count;
-	uint32 reset_flag;
-	uint32 count_code;
-	uint32 category;
-	uint32 hint_timing[2];
-	uint32 card_type;
-	uint32 active_type;
-	uint16 active_location;
-	uint16 active_sequence;
-	card* active_handler;
-	uint16 status;
+	int32 ref_handle{ 0 };
+	duel* pduel{ nullptr };
+	card* owner{ nullptr };
+	card* handler{ nullptr };
+	uint8 effect_owner{ PLAYER_NONE };
+	uint32 description{ 0 };
+	uint32 code{ 0 };
+	uint32 flag[2]{ 0 };
+	uint32 id{ 0 };
+	uint16 type{ 0 };
+	uint16 copy_id{ 0 };
+	uint16 range{ 0 };
+	uint16 s_range{ 0 };
+	uint16 o_range{ 0 };
+	uint8 count_limit{ 0 };
+	uint8 count_limit_max{ 0 };
+	uint16 reset_count{ 0 };
+	uint32 reset_flag{ 0 };
+	uint32 count_code{ 0 };
+	uint32 category{ 0 };
+	uint32 hint_timing[2]{ 0 };
+	uint32 card_type{ 0 };
+	uint32 active_type{ 0 };
+	uint16 active_location{ 0 };
+	uint16 active_sequence{ 0 };
+	card* active_handler{ nullptr };
+	uint16 status{ 0 };
 	std::vector<uint32> label;
-	int32 label_object;
-	int32 condition;
-	int32 cost;
-	int32 target;
-	int32 value;
-	int32 operation;
-	uint8 cost_checked;
+	int32 label_object{ 0 };
+	int32 condition{ 0 };
+	int32 cost{ 0 };
+	int32 target{ 0 };
+	int32 value{ 0 };
+	int32 operation{ 0 };
+	uint8 cost_checked{ FALSE };
 
 	explicit effect(duel* pd);
 	~effect() = default;
@@ -490,6 +490,8 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EFFECT_ACTIVATION_COUNT_LIMIT	367
 #define EFFECT_LIMIT_SPECIAL_SUMMON_POSITION	368
 #define EFFECT_TUNER					369
+#define EFFECT_KAISER_COLOSSEUM			370
+#define EFFECT_REPLACE_DAMAGE			371
 
 //#define EVENT_STARTUP		1000
 #define EVENT_FLIP			1001
@@ -569,7 +571,11 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define DOUBLE_DAMAGE				0x80000000
 #define HALF_DAMAGE					0x80000001
 
-// The type of event in code
+// flag effect
+#define EFFECT_FLAG_EFFECT	0x20000000
+#define MAX_CARD_ID			0xfffffff
+
+// The type of effect code
 #define CODE_CUSTOM		1	// header + id (28 bits)
 #define CODE_COUNTER	2	// header + counter_id (16 bits)
 #define CODE_PHASE		3	// header + phase_id (12 bits)

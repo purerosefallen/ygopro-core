@@ -768,7 +768,7 @@ int32 field::announce_race(int16 step, uint8 playerid, int32 count, int32 availa
 		int32 scount = 0;
 		for(int32 ft = 0x1; ft < (1 << RACES_COUNT); ft <<= 1) {
 			if(ft & available)
-				scount++;
+				++scount;
 		}
 		if(scount <= count) {
 			count = scount;
@@ -788,7 +788,7 @@ int32 field::announce_race(int16 step, uint8 playerid, int32 count, int32 availa
 				pduel->write_buffer8(MSG_RETRY);
 				return FALSE;
 			}
-			sel++;
+			++sel;
 		}
 		if(sel != count) {
 			pduel->write_buffer8(MSG_RETRY);
@@ -807,7 +807,7 @@ int32 field::announce_attribute(int16 step, uint8 playerid, int32 count, int32 a
 		int32 scount = 0;
 		for(int32 ft = 0x1; ft != 0x80; ft <<= 1) {
 			if(ft & available)
-				scount++;
+				++scount;
 		}
 		if(scount <= count) {
 			count = scount;
@@ -827,7 +827,7 @@ int32 field::announce_attribute(int16 step, uint8 playerid, int32 count, int32 a
 				pduel->write_buffer8(MSG_RETRY);
 				return FALSE;
 			}
-			sel++;
+			++sel;
 		}
 		if(sel != count) {
 			pduel->write_buffer8(MSG_RETRY);
