@@ -11,6 +11,10 @@
 #include "common.h"
 #include "interpreter.h"
 
+constexpr bool match_all(uint32 x, uint32 y) {
+	return (x & y) == y;
+}
+
 class scriptlib {
 public:
 	static int32 check_param(lua_State* L, int32 param_type, int32 index, int32 retfalse = FALSE);
@@ -390,6 +394,7 @@ public:
 	static int32 group_select(lua_State *L);
 	static int32 group_select_unselect(lua_State *L);
 	static int32 group_random_select(lua_State *L);
+	static int32 group_cancelable_select(lua_State *L);
 	static int32 group_is_exists(lua_State *L);
 	static int32 group_check_with_sum_equal(lua_State *L);
 	static int32 group_select_with_sum_equal(lua_State *L);
