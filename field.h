@@ -22,6 +22,10 @@
 
 #define MAX_COIN_COUNT	20
 
+//summon action type
+#define SUMMON_IN_IDLE	0
+#define SUMMON_IN_CHAIN	1
+
 class card;
 struct card_data;
 class duel;
@@ -123,29 +127,33 @@ struct field_info {
 	int32 field_id{ 0 };
 	int16 copy_id{ 0 };
 	int16 turn_id{ 0 };
-	int16 turn_id_by_player[2]{ 0 };
+	int16 turn_id_by_player[2]{};
 	int16 card_id{ 0 };
 	uint16 phase{ 0 };
 	uint8 turn_player{ 0 };
-	uint8 priorities[2]{ 0 };
+	uint8 priorities[2]{};
 	uint8 can_shuffle{ TRUE };
 };
 struct lpcost {
 	int32 count{ 0 };
 	int32 amount{ 0 };
-	int32 lpstack[8]{ 0 };
+	int32 lpstack[8]{};
 };
 struct processor_unit {
 	uint16 type{ 0 };
 	uint16 step{ 0 };
 	effect* peffect{ nullptr };
 	group* ptarget{ nullptr };
-	int32 arg1{ 0 };
-	int32 arg2{ 0 };
-	int32 arg3{ 0 };
-	int32 arg4{ 0 };
+	uint32 arg1{ 0 };
+	uint32 arg2{ 0 };
+	uint32 arg3{ 0 };
+	uint32 arg4{ 0 };
 	void* ptr1{ nullptr };
 	void* ptr2{ nullptr };
+	int32 value1{ 0 };
+	int32 value2{ 0 };
+	int32 value3{ 0 };
+	int32 value4{ 0 };
 };
 union return_value {
 	int8 bvalue[64];
@@ -174,7 +182,8 @@ struct processor {
 
 	processor_list units;
 	processor_list subunits;
-	processor_unit reserved;
+	processor_unit damage_step_reserved;
+	processor_unit summon_reserved;
 	card_vector select_cards;
 	card_vector unselect_cards;
 	card_vector summonable_cards;
@@ -249,9 +258,9 @@ struct processor {
 	std::unordered_map<uint32, uint32> spsummon_once_map[2];
 	std::multimap<int32, card*, std::greater<int32>> xmaterial_lst;
 
-	int32 temp_var[4]{ 0 };
+	int32 temp_var[4]{};
 	uint32 global_flag{ 0 };
-	uint16 pre_field[2]{ 0 };
+	uint16 pre_field[2]{};
 	std::set<uint16> opp_mzone;
 	chain_limit_list chain_limit;
 	chain_limit_list chain_limit_p;
@@ -284,19 +293,19 @@ struct processor {
 	uint8 attack_cancelable{ FALSE };
 	uint8 attack_rollback{ FALSE };
 	uint8 effect_damage_step{ 0 };
-	int32 battle_damage[2]{ 0 };
-	int32 summon_count[2]{ 0 };
-	uint8 extra_summon[2]{ FALSE };
-	int32 spe_effect[2]{ 0 };
+	int32 battle_damage[2]{};
+	int32 summon_count[2]{};
+	uint8 extra_summon[2]{};
+	int32 spe_effect[2]{};
 	int32 duel_options{ 0 };
 	int32 duel_rule{ CURRENT_RULE };	//current rule: 5, Master Rule 2020
 	uint32 copy_reset{ 0 };
 	uint8 copy_reset_count{ 0 };
 	uint32 last_control_changed_id{ 0 };
 	uint32 set_group_used_zones{ 0 };
-	uint8 set_group_seq[7]{ 0 };
-	uint8 dice_result[5]{ 0 };
-	uint8 coin_result[MAX_COIN_COUNT]{ 0 };
+	uint8 set_group_seq[7]{};
+	uint8 dice_result[5]{};
+	uint8 coin_result[MAX_COIN_COUNT]{};
 	int32 coin_count{ 0 };
 	bool is_target_ready{ false };
 
@@ -309,25 +318,25 @@ struct processor {
 	card* chain_attack_target{ nullptr };
 	uint8 attack_player{ PLAYER_NONE };
 	uint8 selfdes_disabled{ FALSE };
-	uint8 overdraw[2]{ FALSE };
+	uint8 overdraw[2]{};
 	int32 check_level{ 0 };
 	uint8 shuffle_check_disabled{ FALSE };
-	uint8 shuffle_hand_check[2]{ FALSE };
-	uint8 shuffle_deck_check[2]{ FALSE };
+	uint8 shuffle_hand_check[2]{};
+	uint8 shuffle_deck_check[2]{};
 	uint8 deck_reversed{ FALSE };
 	uint8 remove_brainwashing{ FALSE };
 	uint8 flip_delayed{ FALSE };
 	uint8 damage_calculated{ FALSE };
 	uint8 hand_adjusted{ FALSE };
-	uint8 summon_state_count[2]{ 0 };
-	uint8 normalsummon_state_count[2]{ 0 };
-	uint8 flipsummon_state_count[2]{ 0 };
-	uint8 spsummon_state_count[2]{ 0 };
-	uint8 attack_state_count[2]{ 0 };
-	uint8 battle_phase_count[2]{ 0 };
-	uint8 battled_count[2]{ 0 };
+	uint8 summon_state_count[2]{};
+	uint8 normalsummon_state_count[2]{};
+	uint8 flipsummon_state_count[2]{};
+	uint8 spsummon_state_count[2]{};
+	uint8 attack_state_count[2]{};
+	uint8 battle_phase_count[2]{};
+	uint8 battled_count[2]{};
 	uint8 phase_action{ FALSE };
-	uint32 hint_timing[2]{ 0 };
+	uint32 hint_timing[2]{};
 	uint8 current_player{ PLAYER_NONE };
 	uint8 conti_player{ PLAYER_NONE };
 	std::unordered_map<uint32, std::pair<uint32, uint32>> summon_counter;
@@ -553,9 +562,9 @@ public:
 	void draw(effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, int32 count);
 	void damage(effect* reason_effect, uint32 reason, uint32 reason_player, card* reason_card, uint32 playerid, int32 amount, uint32 is_step = FALSE);
 	void recover(effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, int32 amount, uint32 is_step = FALSE);
-	void summon(uint32 sumplayer, card* target, effect* proc, uint32 ignore_count, uint32 min_tribute, uint32 zone = 0x1f);
-	void mset(uint32 setplayer, card* target, effect* proc, uint32 ignore_count, uint32 min_tribute, uint32 zone = 0x1f);
-	void special_summon_rule(uint32 sumplayer, card* target, uint32 summon_type);
+	void summon(uint32 sumplayer, card* target, effect* proc, uint32 ignore_count, uint32 min_tribute, uint32 zone = 0x1f, uint32 action_type = SUMMON_IN_IDLE);
+	void mset(uint32 setplayer, card* target, effect* proc, uint32 ignore_count, uint32 min_tribute, uint32 zone = 0x1f, uint32 action_type = SUMMON_IN_IDLE);
+	void special_summon_rule(uint32 sumplayer, card* target, uint32 summon_type, uint32 action_type = SUMMON_IN_IDLE);
 	void special_summon(card_set* target, uint32 sumtype, uint32 sumplayer, uint32 playerid, uint32 nocheck, uint32 nolimit, uint32 positions, uint32 zone);
 	void special_summon_step(card* target, uint32 sumtype, uint32 sumplayer, uint32 playerid, uint32 nocheck, uint32 nolimit, uint32 positions, uint32 zone);
 	void special_summon_complete(effect* reason_effect, uint8 reason_player);
@@ -571,6 +580,12 @@ public:
 	void operation_replace(int32 type, int32 step, group* targets);
 	void select_tribute_cards(card* target, uint8 playerid, uint8 cancelable, int32 min, int32 max, uint8 toplayer, uint32 zone);
 
+	// summon
+	int32 summon(uint16 step, uint8 sumplayer, card* target, effect* proc, uint8 ignore_count, uint8 min_tribute, uint32 zone, uint32 action_type);
+	int32 mset(uint16 step, uint8 setplayer, card* ptarget, effect* proc, uint8 ignore_count, uint8 min_tribute, uint32 zone, uint32 action_type);
+	int32 flip_summon(uint16 step, uint8 sumplayer, card* target, uint32 action_type);
+	int32 special_summon_rule(uint16 step, uint8 sumplayer, card* target, uint32 summon_type, uint32 action_type);
+
 	int32 remove_counter(uint16 step, uint32 reason, card* pcard, uint8 rplayer, uint8 s, uint8 o, uint16 countertype, uint16 count);
 	int32 remove_overlay_card(uint16 step, uint32 reason, card* pcard, uint8 rplayer, uint8 s, uint8 o, uint16 min, uint16 max);
 	int32 get_control(uint16 step, effect* reason_effect, uint8 reason_player, group* targets, uint8 playerid, uint16 reset_phase, uint8 reset_count, uint32 zone);
@@ -581,12 +596,8 @@ public:
 	int32 draw(uint16 step, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 playerid, int32 count);
 	int32 damage(uint16 step, effect* reason_effect, uint32 reason, uint8 reason_player, card* reason_card, uint8 playerid, int32 amount, uint32 is_step);
 	int32 recover(uint16 step, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 playerid, int32 amount, uint32 is_step);
-	int32 summon(uint16 step, uint8 sumplayer, card* target, effect* proc, uint8 ignore_count, uint8 min_tribute, uint32 zone);
-	int32 flip_summon(uint16 step, uint8 sumplayer, card* target);
-	int32 mset(uint16 step, uint8 setplayer, card* ptarget, effect* proc, uint8 ignore_count, uint8 min_tribute, uint32 zone);
 	int32 sset(uint16 step, uint8 setplayer, uint8 toplayer, card* ptarget, effect* reason_effect, uint32 zone = 0xff);
 	int32 sset_g(uint16 step, uint8 setplayer, uint8 toplayer, group* ptarget, uint8 confirm, effect* reason_effect, uint32 zone = 0xff);
-	int32 special_summon_rule(uint16 step, uint8 sumplayer, card* target, uint32 summon_type);
 	int32 special_summon_step(uint16 step, group* targets, card* target, uint32 zone);
 	int32 special_summon(uint16 step, effect* reason_effect, uint8 reason_player, group* targets, uint32 zone);
 	int32 destroy_replace(uint16 step, group* targets, card* target, uint8 battle);
@@ -750,17 +761,17 @@ public:
 #define PROCESSOR_DESTROY_REPLACE	56
 #define PROCESSOR_RELEASE_REPLACE	57
 #define PROCESSOR_SENDTO_REPLACE	58
-#define PROCESSOR_SUMMON_RULE		60
-#define PROCESSOR_SPSUMMON_RULE		61
+#define PROCESSOR_SUMMON_RULE		60  //arg1, arg2
+#define PROCESSOR_SPSUMMON_RULE		61  //arg1, arg2, arg3
 #define PROCESSOR_SPSUMMON			62
-#define PROCESSOR_FLIP_SUMMON		63
-#define PROCESSOR_MSET				64
+#define PROCESSOR_FLIP_SUMMON		63  //arg1, arg2
+#define PROCESSOR_MSET				64  //arg1, arg2
 #define PROCESSOR_SSET				65
 #define PROCESSOR_SPSUMMON_STEP		66
 #define PROCESSOR_SSET_G			67
 #define PROCESSOR_DRAW				70
-#define PROCESSOR_DAMAGE			71
-#define PROCESSOR_RECOVER			72
+#define PROCESSOR_DAMAGE			71  //arg1, arg2, arg3
+#define PROCESSOR_RECOVER			72  //arg1, arg2, arg3
 #define PROCESSOR_EQUIP				73
 #define PROCESSOR_GET_CONTROL		74
 #define PROCESSOR_SWAP_CONTROL		75
