@@ -147,40 +147,29 @@ int32 scriptlib::card_get_code(lua_State *L) {
 	}
 	return 1;
 }
-// GetOriginalCode(): get the original code printed on card
-// return: 1 int
 int32 scriptlib::card_get_origin_code(lua_State *L) {
 	check_param_count(L, 1);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
-	if(pcard->data.alias) {
-		if((pcard->data.alias < pcard->data.code + CARD_ARTWORK_VERSIONS_OFFSET) && (pcard->data.code < pcard->data.alias + CARD_ARTWORK_VERSIONS_OFFSET))
-			lua_pushinteger(L, pcard->data.alias);
-		else
-			lua_pushinteger(L, pcard->data.code);
-	} else
-		lua_pushinteger(L, pcard->data.code);
+	lua_pushinteger(L, pcard->get_original_code());
 	return 1;
 }
-// GetOriginalCodeRule(): get the original code in duel (can be different from printed code)
-// return: 1-2 int
 int32 scriptlib::card_get_origin_code_rule(lua_State *L) {
 	check_param_count(L, 1);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
-	effect_set eset;
-	pcard->filter_effect(EFFECT_ADD_CODE, &eset);
-	if(pcard->data.alias && !eset.size())
-		lua_pushinteger(L, pcard->data.alias);
-	else {
-		lua_pushinteger(L, pcard->data.code);
-		if(eset.size()) {
-			uint32 otcode = eset.get_last()->get_value(pcard);
-			lua_pushinteger(L, otcode);
-			return 2;
-		}
+	auto codes = pcard->get_original_code_rule();
+	uint32 code1 = std::get<0>(codes);
+	uint32 code2 = std::get<1>(codes);
+	if (code2) {
+		lua_pushinteger(L, code1);
+		lua_pushinteger(L, code2);
+		return 2;
 	}
-	return 1;
+	else {
+		lua_pushinteger(L, code1);
+		return 1;
+	}
 }
 int32 scriptlib::card_get_fusion_code(lua_State *L) {
 	check_param_count(L, 1);
@@ -989,7 +978,7 @@ int32 scriptlib::card_get_summon_type(lua_State *L) {
 	check_param_count(L, 1);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
-	lua_pushinteger(L, pcard->get_summon_info() & 0xff00ffff);
+	lua_pushinteger(L, pcard->get_summon_info() & DEFAULT_SUMMON_TYPE);
 	return 1;
 }
 int32 scriptlib::card_get_summon_location(lua_State *L) {
@@ -1044,6 +1033,9 @@ int32 scriptlib::card_get_special_summon_info(lua_State *L) {
 			case SUMMON_INFO_REASON_EFFECT:
 				interpreter::effect2value(L, pcard->spsummon.reason_effect);
 				break;
+			case SUMMON_INFO_REASON_PLAYER:
+				lua_pushinteger(L, pcard->spsummon.reason_player);
+				break;
 			default:
 				lua_pushnil(L);
 				break;
@@ -1090,19 +1082,9 @@ int32 scriptlib::card_is_origin_code_rule(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
-	uint32 code1 = 0;
-	uint32 code2 = 0;
-	effect_set eset;
-	pcard->filter_effect(EFFECT_ADD_CODE, &eset);
-	if(pcard->data.alias && !eset.size()){
-		code1 = pcard->data.alias;
-		code2 = 0;
-	}
-	else {
-		code1 = pcard->data.code;
-		if(eset.size())
-			code2 = eset.get_last()->get_value(pcard);
-	}
+	auto codes = pcard->get_original_code_rule();
+	uint32 code1 = std::get<0>(codes);
+	uint32 code2 = std::get<1>(codes);
 	uint32 count = lua_gettop(L) - 1;
 	uint32 result = FALSE;
 	for(uint32 i = 0; i < count; ++i) {
@@ -1382,7 +1364,7 @@ int32 scriptlib::card_is_non_attribute(lua_State *L) {
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**)lua_touserdata(L, 1);
 	uint32 tattrib = (uint32)lua_tointeger(L, 2);
-	if(pcard->get_attribute() & (ATTRIBUTE_ALL - tattrib))
+	if(pcard->get_attribute() & (ATTRIBUTE_ALL & ~tattrib))
 		lua_pushboolean(L, 1);
 	else
 		lua_pushboolean(L, 0);
@@ -1422,7 +1404,7 @@ int32 scriptlib::card_is_summon_type(lua_State *L) {
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**)lua_touserdata(L, 1);
 	uint32 ttype = (uint32)lua_tointeger(L, 2);
-	if(((pcard->get_summon_info() & 0xff00ffff) & ttype) == ttype)
+	if(((pcard->get_summon_info() & DEFAULT_SUMMON_TYPE) & ttype) == ttype)
 		lua_pushboolean(L, 1);
 	else
 		lua_pushboolean(L, 0);
@@ -2273,6 +2255,10 @@ int32 scriptlib::card_is_msetable(lua_State *L) {
 	check_param_count(L, 3);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
+	if(pcard->pduel->game_field->core.effect_damage_step) {
+		lua_pushboolean(L, FALSE);
+		return 1;
+	}
 	uint32 p = pcard->pduel->game_field->core.reason_player;
 	uint32 ign = lua_toboolean(L, 2);
 	effect* peffect = nullptr;
@@ -2321,7 +2307,7 @@ int32 scriptlib::card_is_synchro_summonable(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
-	if(!(pcard->data.type & TYPE_SYNCHRO)) {
+	if(!(pcard->data.type & TYPE_SYNCHRO) || pcard->pduel->game_field->core.effect_damage_step) {
 		lua_pushboolean(L, FALSE);
 		return 1;
 	}
@@ -2357,7 +2343,7 @@ int32 scriptlib::card_is_xyz_summonable(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
-	if(!(pcard->data.type & TYPE_XYZ)) {
+	if(!(pcard->data.type & TYPE_XYZ) || pcard->pduel->game_field->core.effect_damage_step) {
 		lua_pushboolean(L, FALSE);
 		return 1;
 	}
@@ -2385,7 +2371,7 @@ int32 scriptlib::card_is_link_summonable(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**)lua_touserdata(L, 1);
-	if(!(pcard->data.type & TYPE_LINK)) {
+	if(!(pcard->data.type & TYPE_LINK) || pcard->pduel->game_field->core.effect_damage_step) {
 		lua_pushboolean(L, FALSE);
 		return 1;
 	}
@@ -2421,6 +2407,10 @@ int32 scriptlib::card_is_can_be_summoned(lua_State *L) {
 	check_param_count(L, 3);
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
+	if(pcard->pduel->game_field->core.effect_damage_step) {
+		lua_pushboolean(L, FALSE);
+		return 1;
+	}
 	uint32 p = pcard->pduel->game_field->core.reason_player;
 	uint32 ign = lua_toboolean(L, 2);
 	effect* peffect = nullptr;

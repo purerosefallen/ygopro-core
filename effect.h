@@ -34,7 +34,7 @@ public:
 	uint8 effect_owner{ PLAYER_NONE };
 	uint32 description{ 0 };
 	uint32 code{ 0 };
-	uint32 flag[2]{ 0 };
+	uint32 flag[2]{};
 	uint32 id{ 0 };
 	uint16 type{ 0 };
 	uint16 copy_id{ 0 };
@@ -47,7 +47,7 @@ public:
 	uint32 reset_flag{ 0 };
 	uint32 count_code{ 0 };
 	uint32 category{ 0 };
-	uint32 hint_timing[2]{ 0 };
+	uint32 hint_timing[2]{};
 	uint32 card_type{ 0 };
 	uint32 active_type{ 0 };
 	uint16 active_location{ 0 };
@@ -538,6 +538,7 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EVENT_SUMMON_NEGATED		1114
 #define EVENT_FLIP_SUMMON_NEGATED	1115
 #define EVENT_SPSUMMON_NEGATED		1116
+#define EVENT_SPSUMMON_SUCCESS_G_P	1117
 #define EVENT_CONTROL_CHANGED		1120
 #define EVENT_EQUIP					1121
 #define EVENT_ATTACK_ANNOUNCE		1130
@@ -581,7 +582,13 @@ constexpr int32 HALF_DAMAGE = 0x80000001;
 #define CODE_PHASE		3	// header + phase_id (12 bits)
 #define CODE_VALUE		4	// numeric value, max = 4095
 
-const std::unordered_set<uint32> continuous_event({ EVENT_ADJUST, EVENT_BREAK_EFFECT, EVENT_TURN_END });
+const std::unordered_set<uint32> continuous_event{
+	EVENT_ADJUST,
+	EVENT_BREAK_EFFECT,
+	EVENT_TURN_END,
+	EVENT_PRE_BATTLE_DAMAGE,
+	EVENT_SPSUMMON_SUCCESS_G_P,
+};
 bool is_continuous_event(uint32 code);
 
 #endif /* EFFECT_H_ */
