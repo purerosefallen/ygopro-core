@@ -66,6 +66,10 @@ extern "C" DECL_DLLEXPORT intptr_t create_duel(uint_fast32_t seed) {
 }
 extern "C" DECL_DLLEXPORT void start_duel(intptr_t pduel, int32 options) {
 	duel* pd = (duel*)pduel;
+	if(!pd->lua->preloaded) {
+		pd->lua->preloaded = TRUE;
+		pd->lua->call_code_function(0, (char*) "PreloadUds", 0, 0);
+	}
 	pd->game_field->core.duel_options |= options & 0xffff;
 	int32 duel_rule = options >> 16;
 	if(duel_rule)
