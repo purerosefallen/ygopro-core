@@ -26,7 +26,7 @@ struct chain;
 struct card_state {
 	uint32 code{ 0 };
 	uint32 code2{ 0 };
-	std::vector<uint32> setcode;
+	std::vector<uint16_t> setcode;
 	uint32 type{ 0 };
 	uint32 level{ 0 };
 	uint32 rank{ 0 };
@@ -215,6 +215,8 @@ public:
 	effect_relation relate_effect;
 	effect_set_v immune_effect;
 
+	uint8 to_leave_fromex;
+
 	explicit card(duel* pd);
 	~card() = default;
 	static bool card_operation_sort(card* c1, card* c2);
@@ -226,6 +228,7 @@ public:
 	std::tuple<uint32, uint32> get_original_code_rule() const;
 	uint32 get_code();
 	uint32 get_another_code();
+	static bool check_card_setcode(uint32 code, uint32 value);
 	int32 is_set_card(uint32 set_code);
 	int32 is_origin_set_card(uint32 set_code);
 	int32 is_pre_set_card(uint32 set_code);
@@ -349,6 +352,7 @@ public:
 	int32 is_spsummonable(effect* proc, material_info info = null_info);
 	int32 is_summonable(effect* proc, uint8 min_tribute, uint32 zone = 0x1f, uint32 releasable = 0xff00ff);
 	int32 is_can_be_summoned(uint8 playerid, uint8 ingore_count, effect* peffect, uint8 min_tribute, uint32 zone = 0x1f);
+	int32 is_summon_negatable(uint32 sumtype, effect* reason_effect);
 	int32 get_summon_tribute_count();
 	int32 get_set_tribute_count();
 	int32 is_can_be_flip_summoned(uint8 playerid);
@@ -372,7 +376,7 @@ public:
 	int32 is_releasable_by_effect(uint8 playerid, effect* reason_effect);
 	int32 is_capable_send_to_grave(uint8 playerid);
 	int32 is_capable_send_to_hand(uint8 playerid);
-	int32 is_capable_send_to_deck(uint8 playerid);
+	int32 is_capable_send_to_deck(uint8 playerid, uint8 send_activating = FALSE);
 	int32 is_capable_send_to_extra(uint8 playerid);
 	int32 is_capable_cost_to_grave(uint8 playerid);
 	int32 is_capable_cost_to_hand(uint8 playerid);
@@ -417,6 +421,8 @@ public:
 #define SUMMON_VALUE_CUSTOM_TYPE	0x0000ffff
 constexpr uint32 DEFAULT_SUMMON_TYPE = SUMMON_VALUE_MAIN_TYPE | SUMMON_VALUE_SUB_TYPE | SUMMON_VALUE_CUSTOM_TYPE;
 
+#define SUMMON_VALUE_FUTURE_FUSION	0x18
+
 //Counter
 #define COUNTER_WITHOUT_PERMIT	0x1000
 //#define COUNTER_NEED_ENABLE		0x2000
@@ -443,7 +449,5 @@ constexpr uint32 DEFAULT_SUMMON_TYPE = SUMMON_VALUE_MAIN_TYPE | SUMMON_VALUE_SUB
 #define SUMMON_INFO_DEFENSE			0x100
 #define SUMMON_INFO_REASON_EFFECT	0x200
 #define SUMMON_INFO_REASON_PLAYER	0x400
-
-#define CARD_ARTWORK_VERSIONS_OFFSET	10
 
 #endif /* CARD_H_ */
