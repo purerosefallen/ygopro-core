@@ -48,9 +48,17 @@ int32 scriptlib::card_set_card_data(lua_State *L) {
 	case CARDDATA_ALIAS:
 		pcard->data.alias = lua_tointeger(L, 3);
 		break;
-	case CARDDATA_SETCODE:
-		pcard->data.setcode = lua_tointeger(L, 3);
+	case CARDDATA_SETCODE: {
+		unsigned long setcode = lua_tointeger(L, 3);
+		for (int i = 0 ;; ++i)
+		{
+			if(setcode == 0)
+				break;
+			pcard->data.setcode[i] = setcode & 0xffff;
+			setcode >>= 16;
+		}
 		break;
+	}
 	case CARDDATA_TYPE:
 		pcard->data.type = lua_tointeger(L, 3);
 		break;
@@ -2685,9 +2693,9 @@ int32 scriptlib::card_is_chain_attackable(lua_State *L) {
 		lua_pushboolean(L, 0);
 		return 1;
 	}
-	pduel->game_field->core.select_cards.clear();
-	pduel->game_field->get_attack_target(attacker, &pduel->game_field->core.select_cards, TRUE);
-	if(pduel->game_field->core.select_cards.size() == 0 && (monsteronly || attacker->direct_attackable == 0))
+	field::card_vector cv;
+	pduel->game_field->get_attack_target(attacker, &cv, TRUE);
+	if(cv.size() == 0 && (monsteronly || attacker->direct_attackable == 0))
 		lua_pushboolean(L, 0);
 	else
 		lua_pushboolean(L, 1);
