@@ -1317,7 +1317,8 @@ int32 field::process_point_event(int16 step, int32 skip_trigger, int32 skip_free
 				clit->set_triggering_state(phandler);
 			}
 			uint8 tp = clit->triggering_player;
-			if(check_trigger_effect(*clit) && peffect->is_chainable(tp) && peffect->is_activateable(tp, clit->evt, TRUE)) {
+			if(check_trigger_effect(*clit) && peffect->is_chainable(tp)
+				&& peffect->is_activateable(tp, clit->evt, !peffect->is_flag(EFFECT_FLAG_ACTIVATE_CONDITION))) {
 				if(tp == core.current_player)
 					core.select_chains.push_back(*clit);
 			} else {
@@ -1378,8 +1379,8 @@ int32 field::process_point_event(int16 step, int32 skip_trigger, int32 skip_free
 				clit->set_triggering_state(phandler);
 			}
 			uint8 tp = clit->triggering_player;
-			if(check_nonpublic_trigger(*clit) && check_trigger_effect(*clit)
-				&& peffect->is_chainable(tp) && peffect->is_activateable(tp, clit->evt, TRUE)
+			if(check_nonpublic_trigger(*clit) && check_trigger_effect(*clit) && peffect->is_chainable(tp)
+				&& peffect->is_activateable(tp, clit->evt, !peffect->is_flag(EFFECT_FLAG_ACTIVATE_CONDITION))
 				&& check_spself_from_hand_trigger(*clit)) {
 				if(tp == core.current_player)
 					core.select_chains.push_back(*clit);
@@ -1723,7 +1724,7 @@ int32 field::process_quick_effect(int16 step, int32 skip_freechain, uint8 priori
 			const tevent& evt = eit->second;
 			++eit;
 			peffect->set_activate_location();
-			if(peffect->is_chainable(priority) && peffect->is_activateable(priority, evt, TRUE, FALSE, FALSE)) {
+			if(peffect->is_chainable(priority) && peffect->is_activateable(priority, evt, TRUE)) {
 				card* phandler = peffect->get_handler();
 				newchain.flag = 0;
 				newchain.chain_id = infos.field_id++;
@@ -1855,7 +1856,9 @@ int32 field::process_instant_event() {
 			effect* peffect = eit->second;
 			++eit;
 			card* phandler = peffect->get_handler();
-			if(!phandler->is_status(STATUS_EFFECT_ENABLED) || !peffect->is_condition_check(phandler->current.controler, ev))
+			if(!phandler->is_status(STATUS_EFFECT_ENABLED))
+				continue;
+			if(!peffect->is_flag(EFFECT_FLAG_ACTIVATE_CONDITION) && !peffect->is_condition_check(phandler->current.controler, ev))
 				continue;
 			peffect->set_activate_location();
 			newchain.flag = 0;
@@ -1875,7 +1878,8 @@ int32 field::process_instant_event() {
 			effect* peffect = eit->second;
 			++eit;
 			card* phandler = peffect->get_handler();
-			bool act = phandler->is_status(STATUS_EFFECT_ENABLED) && peffect->is_condition_check(phandler->current.controler, ev);
+			bool act = phandler->is_status(STATUS_EFFECT_ENABLED)
+				&& (peffect->is_flag(EFFECT_FLAG_ACTIVATE_CONDITION) || peffect->is_condition_check(phandler->current.controler, ev));
 			if(!act && !(peffect->range & LOCATION_HAND))
 				continue;
 			peffect->set_activate_location();
@@ -2009,7 +2013,7 @@ int32 field::process_single_event(effect* peffect, const tevent& e, chain_list& 
 		}
 	} else {
 		card* phandler = peffect->get_handler();
-		if(!peffect->is_condition_check(phandler->current.controler, e))
+		if(!peffect->is_flag(EFFECT_FLAG_ACTIVATE_CONDITION) && !peffect->is_condition_check(phandler->current.controler, e))
 			return FALSE;
 		peffect->set_activate_location();
 		chain newchain;
@@ -4010,40 +4014,8 @@ int32 field::add_chain(uint16 step) {
 			}
 		}
 		if(peffect->type & EFFECT_TYPE_ACTIVATE) {
-			int32 ecode = 0;
-			if(phandler->current.location == LOCATION_HAND) {
-				if(phandler->data.type & TYPE_TRAP)
-					ecode = EFFECT_TRAP_ACT_IN_HAND;
-				else if((phandler->data.type & TYPE_SPELL) && (phandler->data.type & TYPE_QUICKPLAY)
-				        && infos.turn_player != phandler->current.controler)
-					ecode = EFFECT_QP_ACT_IN_NTPHAND;
-				else if((phandler->data.type & TYPE_PENDULUM) && peffect->is_flag(EFFECT_FLAG2_SPOSITCH)
-				        && infos.turn_player != phandler->current.controler)
-					ecode = EFFECT_QP_ACT_IN_NTPHAND;
-			} else if(phandler->current.location == LOCATION_SZONE) {
-				if((phandler->data.type & TYPE_TRAP) && phandler->get_status(STATUS_SET_TURN))
-					ecode = EFFECT_TRAP_ACT_IN_SET_TURN;
-				if((phandler->data.type & TYPE_SPELL) && (phandler->data.type & TYPE_QUICKPLAY) && phandler->get_status(STATUS_SET_TURN))
-					ecode = EFFECT_QP_ACT_IN_SET_TURN;
-			}
-			if(ecode) {
-				eset.clear();
-				phandler->filter_effect(ecode, &eset);
-				effect* pactin = nullptr;
-				for(int32 i = 0; i < eset.size(); ++i) {
-					if(!eset[i]->is_flag(EFFECT_FLAG_COUNT_LIMIT)) {
-						pactin = eset[i];
-						break;
-					}
-				}
-				if(!pactin) {
-					for(int32 i = 0; i < eset.size(); ++i) {
-						if(eset[i]->check_count_limit(phandler->current.controler)) {
-							eset[i]->dec_count(phandler->current.controler);
-							break;
-						}
-					}
-				}
+			if(peffect->get_required_handorset_effects(&clit.required_handorset_effects, clit.triggering_player, clit.evt) != 2) {
+				clit.required_handorset_effects.clear();
 			}
 			if(phandler->current.location == LOCATION_HAND) {
 				uint32 zone = 0xff;
@@ -4189,6 +4161,62 @@ int32 field::add_chain(uint16 step) {
 	}
 	case 5: {
 		auto& clit = core.current_chain.back();
+		if (!clit.required_handorset_effects.size()) {
+			core.units.begin()->step = 6;
+			return FALSE;
+		}
+		if(clit.required_handorset_effects.size() == 1) {
+			returns.ivalue[0] = 0;
+			return FALSE;
+		} else {
+			// check if there's only one type of ceffects
+			auto peffect = clit.triggering_effect;
+			auto playerid = clit.triggering_player;
+			int32 ceffect_unique_id = 0;
+			for(int32 i = 0; i < clit.required_handorset_effects.size(); ++i) {
+				pduel->lua->add_param(peffect, PARAM_TYPE_EFFECT);
+				pduel->lua->add_param(playerid, PARAM_TYPE_INT);
+				auto id = clit.required_handorset_effects[i]->get_value(2);
+				if (!id || ceffect_unique_id != id) {
+					ceffect_unique_id = 0;
+					break;
+				}
+				if (!ceffect_unique_id) {
+					ceffect_unique_id = id;
+				}
+			}
+			if (ceffect_unique_id) {
+				// all ceffects are the same type, so skip asking
+				returns.ivalue[0] = 0;
+				return FALSE;
+			}
+		}
+		core.select_options.clear();
+		for(int32 i = 0; i < clit.required_handorset_effects.size(); ++i) {
+			core.select_options.push_back(clit.required_handorset_effects[i]->description);
+		}
+		add_process(PROCESSOR_SELECT_OPTION, 0, 0, 0, clit.triggering_player, 0);
+		return FALSE;
+	}
+	case 6: {
+		auto& clit = core.current_chain.back();
+		auto ceffect = clit.required_handorset_effects[returns.ivalue[0]];
+		ceffect->dec_count(clit.triggering_player);
+		if(ceffect->description) {
+			pduel->write_buffer8(MSG_HINT);
+			pduel->write_buffer8(HINT_OPSELECTED);
+			pduel->write_buffer8(clit.triggering_player);
+			pduel->write_buffer32(ceffect->description);
+		}
+		if(ceffect->cost) {
+			pduel->lua->add_param(clit.triggering_effect, PARAM_TYPE_EFFECT);
+			core.sub_solving_event.push_back(clit.evt);
+			add_process(PROCESSOR_EXECUTE_COST, 0, ceffect, 0, clit.triggering_player, 0);
+		}
+		return FALSE;
+	}
+	case 7: {
+		auto& clit = core.current_chain.back();
 		effect* peffect = clit.triggering_effect;
 		peffect->cost_checked = TRUE;
 		if(peffect->cost) {
@@ -4197,7 +4225,7 @@ int32 field::add_chain(uint16 step) {
 		}
 		return FALSE;
 	}
-	case 6: {
+	case 8: {
 		auto& clit = core.current_chain.back();
 		effect* peffect = clit.triggering_effect;
 		if(peffect->target) {
@@ -4206,7 +4234,7 @@ int32 field::add_chain(uint16 step) {
 		}
 		return FALSE;
 	}
-	case 7: {
+	case 9: {
 		break_effect();
 		core.is_target_ready = true;
 		auto& clit = core.current_chain.back();

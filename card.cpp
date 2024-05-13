@@ -141,6 +141,36 @@ bool card::card_operation_sort(card* c1, card* c2) {
 			return c1->overlay_target->current.sequence < c2->overlay_target->current.sequence;
 		else
 			return c1->current.sequence < c2->current.sequence;
+	} else if (c1->current.location & LOCATION_DECK && !pduel->game_field->core.select_deck_seq_preserved) {
+		// faceup deck cards should go at the very first
+		if(c1->current.position != c2->current.position) {
+			if(c1->current.position & POS_FACEUP)
+				return false;
+			else
+				return true;
+		}
+		// if deck reversed and the card being at the top, it should go first
+		if(pduel->game_field->core.deck_reversed) {
+			if(c1->current.sequence == pduel->game_field->player[cp1].list_main.size() - 1)
+				return false;
+			if(c2->current.sequence == pduel->game_field->player[cp2].list_main.size() - 1)
+				return true;
+		}
+		// sort deck as card property
+		auto c1_type = c1->data.type & 0x7;
+		auto c2_type = c2->data.type & 0x7;
+		// monster should go before spell, and then trap
+		if(c1_type != c2_type)
+			return c1_type > c2_type;
+		if(c1_type & TYPE_MONSTER) {
+			// sort monster by level, then code
+			if(c1->data.level != c2->data.level)
+				return c1->data.level < c2->data.level;
+			else
+				return c1->data.code > c2->data.code;
+		} else
+			// spell and trap should go by code
+			return c1->data.code > c2->data.code;
 	} else {
 		if(c1->current.location & (LOCATION_DECK | LOCATION_EXTRA | LOCATION_GRAVE | LOCATION_REMOVED))
 			return c1->current.sequence > c2->current.sequence;
@@ -188,6 +218,7 @@ card::card(duel* pd) {
 	assume_type = 0;
 	assume_value = 0;
 	spsummon_code = 0;
+	xyz_materials_previous_count_onfield = 0;
 	current.controler = PLAYER_NONE;
 	to_leave_fromex = FALSE;
 }
@@ -1382,9 +1413,8 @@ int32 card::is_link_marker(uint32 dir) {
 	return (int32)(get_link_marker() & dir);
 }
 uint32 card::get_linked_zone() {
-	if((!(data.type & TYPE_LINK) || current.location != LOCATION_MZONE
-		|| get_status(STATUS_SUMMONING | STATUS_SUMMON_DISABLED | STATUS_SPSUMMON_STEP))
-	&& (!is_affected_by_effect(EFFECT_LINK_SPELL_KOISHI) || current.location != LOCATION_SZONE))
+	if((!(data.type & TYPE_LINK) || current.location != LOCATION_MZONE || is_treated_as_not_on_field())
+			&& (!is_affected_by_effect(EFFECT_LINK_SPELL_KOISHI) || current.location != LOCATION_SZONE))
 		return 0;
 	int32 zones = 0;
 	int32 s = current.sequence;
@@ -1393,7 +1423,7 @@ uint32 card::get_linked_zone() {
 			return 0;
 		if(is_link_marker(LINK_MARKER_TOP_LEFT) && s != 0)
 			zones |= 1u << (s - 1);
-		if(is_link_marker(LINK_MARKER_TOP) && s != 0)
+		if(is_link_marker(LINK_MARKER_TOP))
 			zones |= 1u << s;
 		if(is_link_marker(LINK_MARKER_TOP_RIGHT) && s != 4)
 			zones |= 1u << (s + 1);
@@ -1450,8 +1480,7 @@ void card::get_linked_cards(card_set* cset) {
 	pduel->game_field->get_cards_in_zone(cset, linked_zone >> 16, 1 - p, LOCATION_MZONE);
 }
 uint32 card::get_mutual_linked_zone() {
-	if(!(data.type & TYPE_LINK) || current.location != LOCATION_MZONE
-		|| get_status(STATUS_SUMMONING | STATUS_SUMMON_DISABLED | STATUS_SPSUMMON_STEP))
+	if(!(data.type & TYPE_LINK) || current.location != LOCATION_MZONE || is_treated_as_not_on_field())
 		return 0;
 	int32 zones = 0;
 	int32 p = current.controler;
@@ -1613,6 +1642,27 @@ int32 card::is_all_column() {
 	if(cset.size() == full)
 		return TRUE;
 	return FALSE;
+}
+uint8 card::get_select_sequence(uint8 *deck_seq_pointer) {
+	if(current.location == LOCATION_DECK && !pduel->game_field->core.select_deck_seq_preserved) {
+		return deck_seq_pointer[current.controler]++;
+	} else {
+		return current.sequence;
+	}
+}
+uint32 card::get_select_info_location(uint8 *deck_seq_pointer) {
+	if(current.location == LOCATION_DECK) {
+		uint32 c = current.controler;
+		uint32 l = current.location;
+		uint32 s = get_select_sequence(deck_seq_pointer);
+		uint32 ss = current.position;
+		return c + (l << 8) + (s << 16) + (ss << 24);
+	} else {
+		return get_info_location();
+	}
+}
+int32 card::is_treated_as_not_on_field() {
+	return get_status(STATUS_SUMMONING | STATUS_SUMMON_DISABLED | STATUS_ACTIVATE_DISABLED | STATUS_SPSUMMON_STEP);
 }
 void card::equip(card* target, uint32 send_msg) {
 	if (equiping_target)
@@ -2106,7 +2156,7 @@ void card::remove_effect(effect* peffect, effect_container::iterator it) {
 }
 int32 card::copy_effect(uint32 code, uint32 reset, uint32 count) {
 	card_data cdata;
-	read_card(code, &cdata);
+	::read_card(code, &cdata);
 	if(cdata.type & TYPE_NORMAL)
 		return -1;
 	set_status(STATUS_COPYING_EFFECT, TRUE);
@@ -2142,7 +2192,7 @@ int32 card::copy_effect(uint32 code, uint32 reset, uint32 count) {
 }
 int32 card::replace_effect(uint32 code, uint32 reset, uint32 count) {
 	card_data cdata;
-	read_card(code, &cdata);
+	::read_card(code, &cdata);
 	if(cdata.type & TYPE_NORMAL)
 		return -1;
 	if(is_status(STATUS_EFFECT_REPLACED))
@@ -2646,7 +2696,7 @@ void card::set_special_summon_status(effect* peffect) {
 	}
 	card* pcard = peffect->get_handler();
 	auto cait = pduel->game_field->core.current_chain.rbegin();
-	if(!(peffect->type & 0x7f0) || pcard->is_has_relation(*cait)) {
+	if(!(peffect->type & 0x7f0) || (pcard->is_has_relation(*cait) && !(pcard->get_type() & TYPE_TRAPMONSTER))) {
 		spsummon.code = pcard->get_code();
 		spsummon.code2 = pcard->get_another_code();
 		spsummon.type = pcard->get_type();
