@@ -14,7 +14,7 @@
 #include "group.h"
 #include "ocgapi.h"
 
-inline void write_buffer_vector(std::vector<byte>& buffer, const void*& data, int size) {
+inline void write_buffer_vector(std::vector<byte>& buffer, const void* data, int size) {
 	if (size > 0) {
 		const auto len = buffer.size();
 		buffer.resize(len + size);
@@ -29,6 +29,9 @@ duel::duel() {
 	game_field->rose_card = 0;
 	game_field->rose_level = 0;
 	message_buffer.reserve(SIZE_MESSAGE_BUFFER);
+#ifdef _WIN32
+	_set_error_mode(_OUT_TO_MSGBOX);
+#endif // _WIN32
 }
 duel::~duel() {
 	for(auto& pcard : cards)

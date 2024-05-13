@@ -70,6 +70,7 @@ struct chain {
 	tevent evt;
 	opmap opinfos;
 	uint32 flag{ 0 };
+	effect_set required_handorset_effects;
 
 	static bool chain_operation_sort(const chain& c1, const chain& c2);
 	void set_triggering_state(card* pcard);
@@ -346,6 +347,7 @@ struct processor {
 	uint32 hint_timing[2]{};
 	uint8 current_player{ PLAYER_NONE };
 	uint8 conti_player{ PLAYER_NONE };
+	uint8 select_deck_seq_preserved{ FALSE };
 	std::unordered_map<uint32, std::pair<uint32, uint32>> summon_counter;
 	std::unordered_map<uint32, std::pair<uint32, uint32>> normalsummon_counter;
 	std::unordered_map<uint32, std::pair<uint32, uint32>> spsummon_counter;
