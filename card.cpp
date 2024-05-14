@@ -12,6 +12,7 @@
 #include "group.h"
 #include "interpreter.h"
 #include "ocgapi.h"
+#include "buffer.h"
 #include <algorithm>
 
 const std::unordered_map<uint32, uint32> card::second_code = {
@@ -142,18 +143,18 @@ bool card::card_operation_sort(card* c1, card* c2) {
 		else
 			return c1->current.sequence < c2->current.sequence;
 	} else if (c1->current.location & LOCATION_DECK && !pduel->game_field->core.select_deck_seq_preserved) {
-		// faceup deck cards should go at the very first
-		if(c1->current.position != c2->current.position) {
-			if(c1->current.position & POS_FACEUP)
-				return false;
-			else
-				return true;
-		}
 		// if deck reversed and the card being at the top, it should go first
 		if(pduel->game_field->core.deck_reversed) {
 			if(c1->current.sequence == pduel->game_field->player[cp1].list_main.size() - 1)
 				return false;
 			if(c2->current.sequence == pduel->game_field->player[cp2].list_main.size() - 1)
+				return true;
+		}
+		// faceup deck cards should go at the very first
+		if(c1->current.position != c2->current.position) {
+			if(c1->current.position & POS_FACEUP)
+				return false;
+			else
 				return true;
 		}
 		// sort deck as card property
@@ -163,14 +164,13 @@ bool card::card_operation_sort(card* c1, card* c2) {
 		if(c1_type != c2_type)
 			return c1_type > c2_type;
 		if(c1_type & TYPE_MONSTER) {
-			// sort monster by level, then code
-			if(c1->data.level != c2->data.level)
-				return c1->data.level < c2->data.level;
-			else
-				return c1->data.code > c2->data.code;
-		} else
-			// spell and trap should go by code
+			if (c1->data.level != c2->data.level)
+				return c1->data.level > c2->data.level;
+			// TODO: more sorts here
+		}
+		if(c1->data.code != c2->data.code)
 			return c1->data.code > c2->data.code;
+		return c1->current.sequence > c2->current.sequence;
 	} else {
 		if(c1->current.location & (LOCATION_DECK | LOCATION_EXTRA | LOCATION_GRAVE | LOCATION_REMOVED))
 			return c1->current.sequence > c2->current.sequence;
@@ -222,17 +222,16 @@ card::card(duel* pd) {
 	current.controler = PLAYER_NONE;
 	to_leave_fromex = FALSE;
 }
-inline void update_cache(uint32& tdata, uint32& cache, int32*& p, uint32& query_flag, const uint32 flag) {
+inline void update_cache(uint32& tdata, uint32& cache, byte*& p, uint32& query_flag, const uint32 flag) {
 	if (tdata != cache) {
 		cache = tdata;
-		*p = tdata;
-		++p;
+		buffer_write<uint32_t>(p, tdata);
 	}
 	else
 		query_flag &= ~flag;
 }
 int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
-	int32* p = (int32*)buf;
+	byte* p = buf;
 	std::pair<int32, int32> atk_def(-10, -10);
 	std::pair<int32, int32> base_atk_def(-10, -10);
 	if ((query_flag & QUERY_ATTACK) || (query_flag & QUERY_DEFENSE)) {
@@ -242,15 +241,13 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 		base_atk_def = get_base_atk_def();
 	}
 	//first 8 bytes: data length, query flag
-	p += 2;
+	p += 8;
 	if (query_flag & QUERY_CODE) {
-		*p = data.code;
-		++p;
+		buffer_write<uint32_t>(p, data.code);
 	}
 	if (query_flag & QUERY_POSITION) {
 		uint32 tdata = get_info_location();
-		*p = tdata;
-		++p;
+		buffer_write<uint32_t>(p, tdata);
 		if (q_cache.info_location != tdata) {
 			q_cache.clear_cache();
 			q_cache.info_location = tdata;
@@ -259,59 +256,54 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 	}
 	if(!use_cache) {
 		if (query_flag & QUERY_ALIAS) {
-			*p = get_code();
-			q_cache.current_code = *p;
-			++p;
+			uint32 tdata = get_code();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.current_code = tdata;
 		}
 		if (query_flag & QUERY_TYPE) {
-			*p = get_type();
-			q_cache.type = *p;
-			++p;
+			uint32 tdata = get_type();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.type = tdata;
 		}
 		if (query_flag & QUERY_LEVEL) {
-			*p = get_level();
-			q_cache.level = *p;
-			++p;
+			uint32 tdata = get_level();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.level = tdata;
 		}
 		if (query_flag & QUERY_RANK) {
-			*p = get_rank();
-			q_cache.rank = *p;
-			++p;
+			uint32 tdata = get_rank();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.rank = tdata;
 		}
 		if (query_flag & QUERY_ATTRIBUTE) {
-			*p = get_attribute();
-			q_cache.attribute = *p;
-			++p;
+			uint32 tdata = get_attribute();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.attribute = tdata;
 		}
 		if (query_flag & QUERY_RACE) {
-			*p = get_race();
-			q_cache.race = *p;
-			++p;
+			uint32 tdata = get_race();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.race = tdata;
 		}
 		if (query_flag & QUERY_ATTACK) {
-			*p = atk_def.first;
+			buffer_write<int32_t>(p, atk_def.first);
 			q_cache.attack = atk_def.first;
-			++p;
 		}
 		if (query_flag & QUERY_DEFENSE) {
-			*p = atk_def.second;
+			buffer_write<int32_t>(p, atk_def.second);
 			q_cache.defense = atk_def.second;
-			++p;
 		}
 		if (query_flag & QUERY_BASE_ATTACK) {
-			*p = base_atk_def.first;
+			buffer_write<int32_t>(p, base_atk_def.first);
 			q_cache.base_attack = base_atk_def.first;
-			++p;
 		}
 		if (query_flag & QUERY_BASE_DEFENSE) {
-			*p = base_atk_def.second;
+			buffer_write<int32_t>(p, base_atk_def.second);
 			q_cache.base_defense = base_atk_def.second;
-			++p;
 		}
 		if (query_flag & QUERY_REASON) {
-			*p = current.reason;
+			buffer_write<uint32_t>(p, current.reason);
 			q_cache.reason = current.reason;
-			++p;
 		}
 	}
 	else {
@@ -342,8 +334,7 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 		if((query_flag & QUERY_ATTACK)) {
 			if (atk_def.first != q_cache.attack) {
 				q_cache.attack = atk_def.first;
-				*p = atk_def.first;
-				++p;
+				buffer_write<int32_t>(p, atk_def.first);
 			}
 			else
 				query_flag &= ~QUERY_ATTACK;
@@ -351,8 +342,7 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 		if((query_flag & QUERY_DEFENSE)) {
 			if (atk_def.second != q_cache.defense) {
 				q_cache.defense = atk_def.second;
-				*p = atk_def.second;
-				++p;
+				buffer_write<int32_t>(p, atk_def.second);
 			}
 			else
 				query_flag &= ~QUERY_DEFENSE;
@@ -360,8 +350,7 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 		if((query_flag & QUERY_BASE_ATTACK)) {
 			if (base_atk_def.first != q_cache.base_attack) {
 				q_cache.base_attack = base_atk_def.first;
-				*p = base_atk_def.first;
-				++p;
+				buffer_write<int32_t>(p, base_atk_def.first);
 			}
 			else
 				query_flag &= ~QUERY_BASE_ATTACK;
@@ -369,8 +358,7 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 		if((query_flag & QUERY_BASE_DEFENSE)) {
 			if (base_atk_def.second != q_cache.base_defense) {
 				q_cache.base_defense = base_atk_def.second;
-				*p = base_atk_def.second;
-				++p;
+				buffer_write<int32_t>(p, base_atk_def.second);
 			}
 			else
 				query_flag &= ~QUERY_BASE_DEFENSE;
@@ -381,73 +369,68 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 		}
 	}
 	if (query_flag & QUERY_REASON_CARD) {
-		*p = current.reason_card ? current.reason_card->get_info_location() : 0;
-		++p;
+		uint32 tdata = current.reason_card ? current.reason_card->get_info_location() : 0;
+		buffer_write<uint32_t>(p, tdata);
 	}
 	if(query_flag & QUERY_EQUIP_CARD) {
 		if (equiping_target) {
-			*p = equiping_target->get_info_location();
-			++p;
+			uint32 tdata = equiping_target->get_info_location();
+			buffer_write<uint32_t>(p, tdata);
 		}
 		else
 			query_flag &= ~QUERY_EQUIP_CARD;
 	}
 	if(query_flag & QUERY_TARGET_CARD) {
-		*p = (int32)effect_target_cards.size();
-		++p;
+		buffer_write<int32_t>(p, (int32_t)effect_target_cards.size());
 		for (auto& pcard : effect_target_cards) {
-			*p = pcard->get_info_location();
-			++p;
+			uint32 tdata = pcard->get_info_location();
+			buffer_write<uint32_t>(p, tdata);
 		}
 	}
 	if(query_flag & QUERY_OVERLAY_CARD) {
-		*p = (int32)xyz_materials.size();
-		++p;
+		buffer_write<int32_t>(p, (int32_t)xyz_materials.size());
 		for (auto& xcard : xyz_materials) {
-			*p = xcard->data.code;
-			++p;
+			buffer_write<uint32_t>(p, xcard->data.code);
 		}
 	}
 	if(query_flag & QUERY_COUNTERS) {
-		*p = (int32)counters.size();
-		++p;
+		buffer_write<int32_t>(p, (int32_t)counters.size());
 		for (const auto& cmit : counters) {
-			*p = cmit.first + ((cmit.second[0] + cmit.second[1]) << 16);
-			++p;
+			int32 tdata = cmit.first + ((cmit.second[0] + cmit.second[1]) << 16);
+			buffer_write<int32_t>(p, tdata);
 		}
 	}
 	if (query_flag & QUERY_OWNER) {
-		*p = owner;
-		++p;
+		int32 tdata = owner;
+		buffer_write<int32_t>(p, tdata);
 	}
 	if(query_flag & QUERY_STATUS) {
 		uint32 tdata = status & (STATUS_DISABLED | STATUS_FORBIDDEN | STATUS_PROC_COMPLETE);
 		if(!use_cache || (tdata != q_cache.status)) {
 			q_cache.status = tdata;
-			*p = tdata;
-			++p;
+			buffer_write<uint32_t>(p, tdata);
 		}
 		else
 			query_flag &= ~QUERY_STATUS;
 	}
 	if(!use_cache) {
 		if (query_flag & QUERY_LSCALE) {
-			*p = get_lscale();
-			q_cache.lscale = *p;
-			++p;
+			uint32 tdata = get_lscale();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.lscale = tdata;
 		}
 		if (query_flag & QUERY_RSCALE) {
-			*p = get_rscale();
-			q_cache.rscale = *p;
-			++p;
+			uint32 tdata = get_rscale();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.rscale = tdata;
 		}
 		if(query_flag & QUERY_LINK) {
-			*p = get_link();
-			q_cache.link = *p;
-			++p;
-			*p = get_link_marker();
-			q_cache.link_marker = *p;
-			++p;
+			uint32 tdata = get_link();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.link = tdata;
+			tdata = get_link_marker();
+			buffer_write<uint32_t>(p, tdata);
+			q_cache.link_marker = tdata;
 		}
 	}
 	else {
@@ -464,22 +447,18 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 			uint32 link_marker = get_link_marker();
 			if((link != q_cache.link) || (link_marker != q_cache.link_marker)) {
 				q_cache.link = link;
-				*p = (int32)link;
-				++p;
+				buffer_write<uint32_t>(p, link);
 				q_cache.link_marker = link_marker;
-				*p = (int32)link_marker;
-				++p;
+				buffer_write<uint32_t>(p, link_marker);
 			}
 			else
 				query_flag &= ~QUERY_LINK;
 		}
 	}
-	int32* finalize = (int32*)buf;
-	*finalize = (byte*)p - buf;
-	++finalize;
-	*finalize = query_flag;
-	++finalize;
-	return (byte*)p - buf;
+	byte* finalize = buf;
+	buffer_write<int32_t>(finalize, p - buf);
+	buffer_write<uint32_t>(finalize, query_flag);
+	return (int32)(p - buf);
 }
 uint32 card::get_info_location() {
 	if(overlay_target) {

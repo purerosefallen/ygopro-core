@@ -13,6 +13,7 @@
 #include "effect.h"
 #include "field.h"
 #include "interpreter.h"
+#include "buffer.h"
 #include <set>
 
 static script_reader sreader = default_script_reader;
@@ -217,7 +218,7 @@ extern "C" DECL_DLLEXPORT int32 query_card(intptr_t pduel, uint8 playerid, uint8
 		return pcard->get_infos(buf, query_flag, use_cache);
 	}
 	else {
-		*((int32*)buf) = LEN_EMPTY;
+		buffer_write<int32_t>(buf, LEN_EMPTY);
 		return LEN_EMPTY;
 	}
 }
@@ -266,8 +267,7 @@ extern "C" DECL_DLLEXPORT int32 query_field_card(intptr_t pduel, uint8 playerid,
 				int32 clen = pcard->get_infos(p, query_flag, use_cache);
 				p += clen;
 			} else {
-				*((int32*)p) = LEN_EMPTY;
-				p += LEN_EMPTY;
+				buffer_write<int32_t>(p, LEN_EMPTY);
 			}
 		}
 	}
@@ -277,8 +277,7 @@ extern "C" DECL_DLLEXPORT int32 query_field_card(intptr_t pduel, uint8 playerid,
 				int32 clen = pcard->get_infos(p, query_flag, use_cache);
 				p += clen;
 			} else {
-				*((int32*)p) = LEN_EMPTY;
-				p += LEN_EMPTY;
+				buffer_write<int32_t>(p, LEN_EMPTY);
 			}
 		}
 	}
@@ -310,8 +309,7 @@ extern "C" DECL_DLLEXPORT int32 query_field_info(intptr_t pduel, byte* buf) {
 	*p++ = ptduel->game_field->core.duel_rule;
 	for(int playerid = 0; playerid < 2; ++playerid) {
 		auto& player = ptduel->game_field->player[playerid];
-		*((int*)p) = player.lp;
-		p += 4;
+		buffer_write<int32_t>(p, player.lp);
 		for(auto& pcard : player.list_mzone) {
 			if(pcard) {
 				*p++ = 1;
@@ -339,15 +337,12 @@ extern "C" DECL_DLLEXPORT int32 query_field_info(intptr_t pduel, byte* buf) {
 	*p++ = (uint8)ptduel->game_field->core.current_chain.size();
 	for(const auto& ch : ptduel->game_field->core.current_chain) {
 		effect* peffect = ch.triggering_effect;
-		*((int*)p) = peffect->get_handler()->data.code;
-		p += 4;
-		*((int*)p) = peffect->get_handler()->get_info_location();
-		p += 4;
+		buffer_write<uint32_t>(p, peffect->get_handler()->data.code);
+		buffer_write<uint32_t>(p, peffect->get_handler()->get_info_location());
 		*p++ = ch.triggering_controler;
 		*p++ = (uint8)ch.triggering_location;
 		*p++ = ch.triggering_sequence;
-		*((int*)p) = peffect->description;
-		p += 4;
+		buffer_write<uint32_t>(p, peffect->description);
 	}
 	return (int32)(p - buf);
 }
