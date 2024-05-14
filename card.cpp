@@ -142,7 +142,7 @@ bool card::card_operation_sort(card* c1, card* c2) {
 			return c1->overlay_target->current.sequence < c2->overlay_target->current.sequence;
 		else
 			return c1->current.sequence < c2->current.sequence;
-	/*} else if (c1->current.location & LOCATION_DECK && !pduel->game_field->core.select_deck_seq_preserved) {
+	} else if (c1->current.location & LOCATION_DECK && !pduel->game_field->core.select_deck_seq_preserved) {
 		// if deck reversed and the card being at the top, it should go first
 		if(pduel->game_field->core.deck_reversed) {
 			if(c1->current.sequence == pduel->game_field->player[cp1].list_main.size() - 1)
@@ -164,15 +164,13 @@ bool card::card_operation_sort(card* c1, card* c2) {
 		if(c1_type != c2_type)
 			return c1_type > c2_type;
 		if(c1_type & TYPE_MONSTER) {
-			// sort monster by level, then code
-			if(c1->data.level != c2->data.level)
-				return c1->data.level < c2->data.level;
-			else
-				return c1->data.code > c2->data.code;
-		} else
-			// spell and trap should go by code
+			if (c1->data.level != c2->data.level)
+				return c1->data.level > c2->data.level;
+			// TODO: more sorts here
+		}
+		if(c1->data.code != c2->data.code)
 			return c1->data.code > c2->data.code;
-			*/
+		return c1->current.sequence > c2->current.sequence;
 	} else {
 		if(c1->current.location & (LOCATION_DECK | LOCATION_EXTRA | LOCATION_GRAVE | LOCATION_REMOVED))
 			return c1->current.sequence > c2->current.sequence;
