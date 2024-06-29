@@ -14,7 +14,7 @@
 #include "ocgapi.h"
 
 int32 scriptlib::debug_message(lua_State *L) {
-#ifndef YGOPRO_SERVER_MODE
+#if !defined(YGOPRO_SERVER_MODE) || defined(YGOPRO_ENABLE_DEBUG_FUNC)
 	duel* pduel = interpreter::get_duel_info(L);
 	lua_getglobal(L, "tostring");
 	lua_pushvalue(L, -2);
@@ -134,16 +134,9 @@ int32 scriptlib::debug_pre_add_counter(lua_State *L) {
 	uint32 countertype = (uint32)lua_tointeger(L, 2);
 	uint32 count = (uint32)lua_tointeger(L, 3);
 	uint16 cttype = countertype;
-	auto pr = pcard->counters.emplace(cttype, card::counter_map::mapped_type());
+	auto pr = pcard->counters.emplace(cttype, 0);
 	auto cmit = pr.first;
-	if(pr.second) {
-		cmit->second[0] = 0;
-		cmit->second[1] = 0;
-	}
-	if(countertype & COUNTER_WITHOUT_PERMIT)
-		cmit->second[0] += count;
-	else
-		cmit->second[1] += count;
+	cmit->second += count;
 	return 0;
 }
 int32 scriptlib::debug_reload_field_begin(lua_State *L) {
@@ -187,7 +180,7 @@ int32 scriptlib::debug_set_ai_name(lua_State *L) {
 	return 0;
 }
 int32 scriptlib::debug_show_hint(lua_State *L) {
-#ifndef YGOPRO_SERVER_MODE
+#if !defined(YGOPRO_SERVER_MODE) || defined(YGOPRO_ENABLE_DEBUG_FUNC)
 	check_param_count(L, 1);
 	check_param(L, PARAM_TYPE_STRING, 1);
 	duel* pduel = interpreter::get_duel_info(L);
