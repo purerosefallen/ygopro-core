@@ -18,11 +18,12 @@
 #include <cstdio>
 
 class card;
+struct card_data;
 class effect;
 class group;
 class duel;
 
-enum LuaParamType {
+enum LuaParamType : int32 {
 	PARAM_TYPE_INT = 0x01,
 	PARAM_TYPE_STRING = 0x02,
 	PARAM_TYPE_CARD = 0x04,
@@ -72,7 +73,7 @@ public:
 	int32 call_card_function(card* pcard, const char* f, uint32 param_count, int32 ret_count);
 	int32 call_code_function(uint32 code, const char* f, uint32 param_count, int32 ret_count);
 	int32 check_condition(int32 f, uint32 param_count);
-	int32 check_matching(card* pcard, int32 findex, int32 extraargs);
+	int32 check_filter(lua_State* L, card* pcard, int32 findex, int32 extraargs);
 	int32 get_operation_value(card* pcard, int32 findex, int32 extraargs);
 	int32 get_function_value(int32 f, uint32 param_count);
 	int32 get_function_value(int32 f, uint32 param_count, std::vector<int32>* result);
@@ -86,6 +87,7 @@ public:
 	static void function2value(lua_State* L, int32 func_ref);
 	static int32 get_function_handle(lua_State* L, int32 index);
 	static duel* get_duel_info(lua_State* L);
+	static bool is_load_script(card_data data);
 
 	template <size_t N, typename... TR>
 	static int sprintf(char (&buffer)[N], const char* format, TR... args) {
