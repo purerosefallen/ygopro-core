@@ -463,7 +463,13 @@ void field::swap_card(card* pcard1, card* pcard2) {
 	return swap_card(pcard1, pcard2, pcard1->current.sequence, pcard2->current.sequence);
 }
 void field::set_control(card* pcard, uint8 playerid, uint16 reset_phase, uint8 reset_count) {
-	if((core.remove_brainwashing && pcard->is_affected_by_effect(EFFECT_REMOVE_BRAINWASHING)) || std::get<uint8>(pcard->refresh_control_status()) == playerid)
+	if((core.remove_brainwashing && pcard->is_affected_by_effect(EFFECT_REMOVE_BRAINWASHING)) || 
+#ifdef _IRR_ANDROID_PLATFORM_
+		std::get<0>(pcard->refresh_control_status())
+#else
+		std::get<uint8>(pcard->refresh_control_status())
+#endif
+	== playerid)
 		return;
 	effect* peffect = pduel->new_effect();
 	if(core.reason_effect)
@@ -660,10 +666,20 @@ int32 field::get_spsummonable_count_fromex(card* pcard, uint8 playerid, uint8 up
 		pcard->current.location = LOCATION_EXTRA;
 	}
 	int32 spsummonable_count = 0;
-	if(core.duel_rule >= NEW_MASTER_RULE)
+	if(core.duel_rule >= NEW_MASTER_RULE && !is_player_affected_by_effect(playerid, EFFECT_EXTRA_TOMAIN_KOISHI) && !pcard->is_affected_by_effect(EFFECT_EXTRA_TOMAIN_KOISHI))
 		spsummonable_count = get_spsummonable_count_fromex_rule4(pcard, playerid, uplayer, zone, list);
 	else
+	{
 		spsummonable_count = get_tofield_count(pcard, playerid, LOCATION_MZONE, uplayer, LOCATION_REASON_TOFIELD, zone, list);
+		if(core.duel_rule >= 4) {
+			uint32 temp_list = 0;
+			get_spsummonable_count_fromex_rule4(pcard, playerid, uplayer, zone, &temp_list);
+			if(~temp_list & ((1u << 5) | (1u << 6)))
+				spsummonable_count++;
+			if(list)
+				*list &= temp_list;
+		}
+	}
 	if(use_temp_card)
 		pcard->current.location = 0;
 	return spsummonable_count;
@@ -796,29 +812,6 @@ int32 field::get_szone_limit(uint8 playerid, uint8 uplayer, uint32 reason) {
 	int32 limit = max - field_used_count[used_flag];
 	return limit;
 }
-int32 field::get_kaiser_limit(uint8 playerid, card_set* using_cards) {
-	if(!is_player_affected_by_effect(playerid, EFFECT_KAISER_COLOSSEUM))
-		return 0xff;
-	auto oppo_monster_count = filter_field_card(playerid, 0, LOCATION_MZONE, 0);
-	if(!oppo_monster_count)
-		return 0xff;
-	auto limit = oppo_monster_count - filter_field_card(playerid, LOCATION_MZONE, 0, 0);
-	for(auto& pcard : *using_cards) {
-		if(pcard->current.is_location(LOCATION_MZONE)) {
-			if(pcard->current.controler == playerid)
-				++limit;
-			else
-				--limit;
-		}
-	}
-	return limit;
-}
-int32 field::get_kaiser_limit(uint8 playerid, card* using_card) {
-	card_set using_cards;
-	if(using_card)
-		using_cards.insert(using_card);
-	return get_kaiser_limit(playerid, &using_cards);
-}
 uint32 field::get_linked_zone(int32 playerid) {
 	uint32 zones = 0;
 	for(auto& pcard : player[playerid].list_mzone) {
@@ -829,12 +822,22 @@ uint32 field::get_linked_zone(int32 playerid) {
 		if(pcard)
 			zones |= pcard->get_linked_zone() >> 16;
 	}
+	for(uint32 i = 0; i < 5; ++i) {
+		if(i > 0 && player[playerid].list_szone[i] && player[playerid].list_szone[i]->is_link_marker(LINK_MARKER_TOP_LEFT))
+			zones |= 1u << (i - 1);
+		if(player[playerid].list_szone[i] && player[playerid].list_szone[i]->is_link_marker(LINK_MARKER_TOP))
+			zones |= 1u << i;
+		if(i < 4 && player[playerid].list_szone[i] && player[playerid].list_szone[i]->is_link_marker(LINK_MARKER_TOP_RIGHT))
+			zones |= 1u << (i + 1);
+	}
 	return zones;
 }
 uint32 field::get_rule_zone_fromex(int32 playerid, card* pcard) {
 	if(core.duel_rule >= NEW_MASTER_RULE) {
 		if(core.duel_rule >= MASTER_RULE_2020 && pcard && (pcard->data.type & (TYPE_FUSION | TYPE_SYNCHRO | TYPE_XYZ))
 			&& (pcard->is_position(POS_FACEDOWN) || !(pcard->data.type & TYPE_PENDULUM)))
+			return 0x7f;
+		if(is_player_affected_by_effect(playerid, EFFECT_EXTRA_TOMAIN_KOISHI) || pcard && pcard->is_affected_by_effect(EFFECT_EXTRA_TOMAIN_KOISHI))
 			return 0x7f;
 		else
 			return get_linked_zone(playerid) | (1u << 5) | (1u << 6);
@@ -1130,7 +1133,7 @@ void field::refresh_player_info(uint8 playerid) {
 		if (player[playerid].list_mzone[i])
 			used_flag |= 0x1U << i;
 	}
-	for (int32 i = 0; i < player[playerid].szone_size; ++i) {
+	for (int32 i = 0; i < (int32)player[playerid].list_szone.size(); ++i) {
 		if (player[playerid].list_szone[i])
 			used_flag |= 0x100U << i;
 	}
@@ -1852,7 +1855,7 @@ void field::get_ritual_material(uint8 playerid, effect* peffect, card_set* mater
 	for(auto& pcard : player[playerid].list_mzone) {
 		if(pcard && pcard->is_affect_by_effect(peffect)
 		        && pcard->is_releasable_by_nonsummon(playerid, REASON_EFFECT) && pcard->is_releasable_by_effect(playerid, peffect)
-				&& (no_level || pcard->get_level() > 0))
+				&& (no_level || pcard->get_level() > 0 || pcard->is_affected_by_effect(EFFECT_MINIATURE_GARDEN_GIRL)))
 			material->insert(pcard);
 		if(pcard && pcard->is_affected_by_effect(EFFECT_OVERLAY_RITUAL_MATERIAL))
 			for(auto& mcard : pcard->xyz_materials)
@@ -1863,7 +1866,7 @@ void field::get_ritual_material(uint8 playerid, effect* peffect, card_set* mater
 		if(pcard && pcard->is_affect_by_effect(peffect)
 		        && pcard->is_affected_by_effect(EFFECT_EXTRA_RELEASE) && pcard->is_position(POS_FACEUP)
 		        && pcard->is_releasable_by_nonsummon(playerid, REASON_EFFECT) && pcard->is_releasable_by_effect(playerid, peffect)
-				&& (no_level || pcard->get_level() > 0))
+				&& (no_level || pcard->get_level() > 0 || pcard->is_affected_by_effect(EFFECT_MINIATURE_GARDEN_GIRL)))
 			material->insert(pcard);
 	}
 	for(auto& pcard : player[playerid].list_hand)
@@ -1875,7 +1878,7 @@ void field::get_ritual_material(uint8 playerid, effect* peffect, card_set* mater
 				&& (no_level || pcard->get_level() > 0))
 			material->insert(pcard);
 	for(auto& pcard : player[playerid].list_extra)
-		if(pcard->is_affected_by_effect(EFFECT_EXTRA_RITUAL_MATERIAL)
+		if(((pcard->is_affected_by_effect(EFFECT_EXTRA_RITUAL_MATERIAL) || pcard->data.type & TYPE_MONSTER) && pcard->is_affected_by_effect(EFFECT_MAP_OF_HEAVEN) && pcard->is_capable_send_to_grave(playerid))
 				&& (no_level || pcard->get_level() > 0))
 			material->insert(pcard);
 }
@@ -3306,13 +3309,32 @@ int32 field::is_player_can_remove_counter(uint8 playerid, card * pcard, uint8 s,
 	return FALSE;
 }
 int32 field::is_player_can_remove_overlay_card(uint8 playerid, card * pcard, uint8 s, uint8 o, uint16 min, uint32 reason) {
-	if((pcard && pcard->xyz_materials.size() >= min) || (!pcard && get_overlay_count(playerid, s, o) >= min))
+	int32 minc = min;
+	effect_set eset;
+	filter_player_effect(playerid, EFFECT_OVERLAY_REMOVE_COST_CHANGE_KOISHI, &eset);
+	for(int32 i = 0; i < eset.size(); ++i) {
+		pduel->lua->add_param(core.reason_effect, PARAM_TYPE_EFFECT);
+		pduel->lua->add_param(playerid, PARAM_TYPE_INT);
+		pduel->lua->add_param(minc, PARAM_TYPE_INT);
+		pduel->lua->add_param(reason, PARAM_TYPE_INT);
+		int32 param_count;
+		if(pcard) {
+			pduel->lua->add_param(pcard, PARAM_TYPE_CARD);
+			param_count = 5;
+		} else {
+			pduel->lua->add_param(s, PARAM_TYPE_INT);
+			pduel->lua->add_param(o, PARAM_TYPE_INT);
+			param_count = 6;
+		}
+		minc = eset[i]->get_value(param_count);
+	}
+	if((pcard && pcard->xyz_materials.size() >= minc) || (!pcard && get_overlay_count(playerid, s, o) >= minc))
 		return TRUE;
 	auto pr = effects.continuous_effect.equal_range(EFFECT_OVERLAY_REMOVE_REPLACE);
 	tevent e;
 	e.event_cards = 0;
 	e.event_player = playerid;
-	e.event_value = min;
+	e.event_value = minc;
 	e.reason = reason;
 	e.reason_effect = core.reason_effect;
 	e.reason_player = playerid;

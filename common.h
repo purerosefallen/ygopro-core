@@ -351,6 +351,8 @@ typedef signed char int8;
 #define MSG_MATCH_KILL			170
 #define MSG_CUSTOM_MSG			180
 
+#define MSG_RESET_TIME			221
+
 //Hints
 #define HINT_EVENT				1
 #define HINT_MESSAGE			2
@@ -363,6 +365,10 @@ typedef signed char int8;
 #define HINT_NUMBER				9
 #define HINT_CARD				10
 #define HINT_ZONE               11
+//custom hints in KoishiPro for custom sound
+#define HINT_MUSIC				21
+#define HINT_SOUND				22
+#define HINT_MUSIC_OGG			23
 //
 #define CHINT_TURN				1
 #define CHINT_CARD				2
@@ -429,5 +435,18 @@ typedef signed char int8;
 #define ACTIVITY_ATTACK			5
 #define ACTIVITY_BATTLE_PHASE	6
 #define ACTIVITY_CHAIN			7
+//card datas for Duel.ReadCard / Card.SetCardData, arranged by database format
+#define CARDDATA_CODE			1
+#define CARDDATA_ALIAS			2
+#define CARDDATA_SETCODE		3
+#define CARDDATA_TYPE			4
+#define CARDDATA_LEVEL			5
+#define CARDDATA_ATTRIBUTE		6
+#define CARDDATA_RACE			7
+#define CARDDATA_ATTACK			8
+#define CARDDATA_DEFENSE		9
+#define CARDDATA_LSCALE			10
+#define CARDDATA_RSCALE			11
+#define CARDDATA_LINK_MARKER	12
 
 #endif /* COMMON_H_ */

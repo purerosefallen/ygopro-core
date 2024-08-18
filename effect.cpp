@@ -111,7 +111,7 @@ int32 effect::is_available(int32 neglect_disabled) {
 				return FALSE;
 			if(powner == phandler && !(is_flag(EFFECT_FLAG_CANNOT_DISABLE) || neglect_disabled) && phandler->get_status(STATUS_DISABLED))
 				return FALSE;
-			if(phandler->is_status(STATUS_BATTLE_DESTROYED))
+			if(phandler->is_status(STATUS_BATTLE_DESTROYED) && !is_flag(EFFECT_FLAG2_AVAILABLE_BD))
 				return FALSE;
 		}
 	}
@@ -192,6 +192,9 @@ int32 effect::get_required_handorset_effects(effect_set* eset, uint8 playerid, c
 				ecode = EFFECT_QP_ACT_IN_NTPHAND;
 			else
 				return FALSE;
+		}
+		else if((handler->data.type & TYPE_PENDULUM) && pduel->game_field->infos.turn_player != playerid && is_flag(EFFECT_FLAG2_SPOSITCH)) {
+			ecode = EFFECT_QP_ACT_IN_NTPHAND;
 		}
 	}
 	else if (handler->current.location == LOCATION_SZONE)
@@ -279,7 +282,7 @@ int32 effect::is_activateable(uint8 playerid, const tevent& e, int32 neglect_con
 				if(!(handler->data.type & (TYPE_FIELD | TYPE_PENDULUM)) && is_flag(EFFECT_FLAG_LIMIT_ZONE) && !(zone & (1u << handler->current.sequence)))
 					return FALSE;
 			} else {
-				if(handler->data.type & TYPE_MONSTER) {
+				if((handler->data.type & TYPE_MONSTER) && !is_flag(EFFECT_FLAG2_ACTIVATE_MONSTER_SZONE)) {
 					if(!(handler->data.type & TYPE_PENDULUM))
 						return FALSE;
 					if(!pduel->game_field->is_location_useable(playerid, LOCATION_PZONE, 0)
@@ -334,7 +337,7 @@ int32 effect::is_activateable(uint8 playerid, const tevent& e, int32 neglect_con
 				return FALSE;
 		} else {
 			card* phandler = get_handler();
-			if((type & EFFECT_TYPE_FIELD) && phandler->is_status(STATUS_BATTLE_DESTROYED))
+			if(!is_flag(EFFECT_FLAG2_AVAILABLE_BD) && (type & EFFECT_TYPE_FIELD) && phandler->is_status(STATUS_BATTLE_DESTROYED))
 				return FALSE;
 			if(((type & EFFECT_TYPE_FIELD) || ((type & EFFECT_TYPE_SINGLE) && is_flag(EFFECT_FLAG_SINGLE_RANGE)))
 				&& (phandler->current.location & LOCATION_ONFIELD)
@@ -839,13 +842,20 @@ void effect::set_active_type() {
 	active_type = phandler->get_type();
 	if(active_type & TYPE_TRAPMONSTER)
 		active_type &= ~TYPE_TRAP;
+	if((type & EFFECT_TYPE_ACTIVATE) && is_flag(EFFECT_FLAG2_SPOSITCH))
+		active_type |= TYPE_QUICKPLAY;
 }
 uint32 effect::get_active_type(uint8 uselast) {
 	if(type & 0x7f0) {
 		if(active_type && uselast)
 			return active_type;
 		else if((type & EFFECT_TYPE_ACTIVATE) && (get_handler()->data.type & TYPE_PENDULUM))
-			return TYPE_PENDULUM + TYPE_SPELL;
+		{
+			if(is_flag(EFFECT_FLAG2_SPOSITCH))
+				return TYPE_PENDULUM + TYPE_SPELL + TYPE_QUICKPLAY;
+			else
+				return TYPE_PENDULUM + TYPE_SPELL;
+		}
 		else
 			return get_handler()->get_type();
 	} else

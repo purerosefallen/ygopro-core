@@ -382,6 +382,8 @@ public:
 	processor core;
 	return_value returns{};
 	tevent nil_event;
+	card* rose_card;
+	uint32 rose_level;
 
 	static int32 field_used_count[32];
 	explicit field(duel* pduel);
@@ -406,8 +408,6 @@ public:
 	int32 get_spsummonable_count_fromex_rule4(card* pcard, uint8 playerid, uint8 uplayer, uint32 zone = 0xff, uint32* list = nullptr);
 	int32 get_mzone_limit(uint8 playerid, uint8 uplayer, uint32 reason);
 	int32 get_szone_limit(uint8 playerid, uint8 uplayer, uint32 reason);
-	int32 get_kaiser_limit(uint8 playerid, card_set* using_cards);
-	int32 get_kaiser_limit(uint8 playerid, card* using_card);
 	uint32 get_linked_zone(int32 playerid);
 	uint32 get_rule_zone_fromex(int32 playerid, card* pcard);
 	void filter_must_use_mzone(uint8 playerid, uint8 uplayer, uint32 reason, card* pcard, uint32* flag);
@@ -612,8 +612,8 @@ public:
 	int32 draw(uint16 step, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 playerid, int32 count);
 	int32 damage(uint16 step, effect* reason_effect, uint32 reason, uint8 reason_player, card* reason_card, uint8 playerid, int32 amount, uint32 is_step);
 	int32 recover(uint16 step, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 playerid, int32 amount, uint32 is_step);
-	int32 sset(uint16 step, uint8 setplayer, uint8 toplayer, card* ptarget, effect* reason_effect);
-	int32 sset_g(uint16 step, uint8 setplayer, uint8 toplayer, group* ptarget, uint8 confirm, effect* reason_effect);
+	int32 sset(uint16 step, uint8 setplayer, uint8 toplayer, card* ptarget, effect* reason_effect, uint32 zone = 0xff);
+	int32 sset_g(uint16 step, uint8 setplayer, uint8 toplayer, group* ptarget, uint8 confirm, effect* reason_effect, uint32 zone = 0xff);
 	int32 special_summon_step(uint16 step, group* targets, card* target, uint32 zone);
 	int32 special_summon(uint16 step, effect* reason_effect, uint8 reason_player, group* targets, uint32 zone);
 	int32 destroy_replace(uint16 step, group* targets, card* target, uint8 battle);

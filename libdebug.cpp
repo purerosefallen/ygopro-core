@@ -14,12 +14,14 @@
 #include "ocgapi.h"
 
 int32 scriptlib::debug_message(lua_State *L) {
+#if !defined(YGOPRO_SERVER_MODE) || defined(YGOPRO_ENABLE_DEBUG_FUNC)
 	duel* pduel = interpreter::get_duel_info(L);
 	lua_getglobal(L, "tostring");
 	lua_pushvalue(L, -2);
 	lua_pcall(L, 1, 1, 0);
 	interpreter::sprintf(pduel->strbuffer, "%s", lua_tostring(L, -1));
 	handle_message(pduel, 2);
+#endif
 	return 0;
 }
 int32 scriptlib::debug_add_card(lua_State *L) {
@@ -36,6 +38,10 @@ int32 scriptlib::debug_add_card(lua_State *L) {
 		return 0;
 	if (!check_playerid(playerid))
 		return 0;
+	if(!pduel->lua->preloaded) {
+		pduel->lua->preloaded = TRUE;
+		pduel->lua->call_code_function(0, (char*) "PreloadUds", 0, 0);
+	}
 	if(pduel->game_field->is_location_useable(playerid, location, sequence)) {
 		card* pcard = pduel->new_card(code);
 		pcard->owner = owner;
@@ -164,6 +170,7 @@ int32 scriptlib::debug_reload_field_end(lua_State *L) {
 	return 0;
 }
 int32 scriptlib::debug_set_ai_name(lua_State *L) {
+#ifndef YGOPRO_SERVER_MODE
 	check_param_count(L, 1);
 	check_param(L, PARAM_TYPE_STRING, 1);
 	duel* pduel = interpreter::get_duel_info(L);
@@ -175,9 +182,11 @@ int32 scriptlib::debug_set_ai_name(lua_State *L) {
 	pduel->write_buffer16(len);
 	pduel->write_buffer(pstr, len);
 	pduel->write_buffer8(0);
+#endif
 	return 0;
 }
 int32 scriptlib::debug_show_hint(lua_State *L) {
+#if !defined(YGOPRO_SERVER_MODE) || defined(YGOPRO_ENABLE_DEBUG_FUNC)
 	check_param_count(L, 1);
 	check_param(L, PARAM_TYPE_STRING, 1);
 	duel* pduel = interpreter::get_duel_info(L);
@@ -189,6 +198,7 @@ int32 scriptlib::debug_show_hint(lua_State *L) {
 	pduel->write_buffer16(len);
 	pduel->write_buffer(pstr, len);
 	pduel->write_buffer8(0);
+#endif
 	return 0;
 }
 

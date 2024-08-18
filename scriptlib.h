@@ -20,7 +20,29 @@ public:
 	static int32 check_param(lua_State* L, int32 param_type, int32 index, int32 retfalse = FALSE);
 	static int32 check_param_count(lua_State* L, int32 count);
 	static int32 check_action_permission(lua_State* L);
-
+	//millux
+	static int32 card_is_ritual_type(lua_State *L);
+	static int32 card_set_entity_code(lua_State *L);
+	static int32 card_set_card_data(lua_State *L);
+	static int32 card_get_link_marker(lua_State *L);
+	static int32 card_get_origin_link_marker(lua_State *L);
+	static int32 card_is_xyz_summonable_by_rose(lua_State *L);
+	static int32 card_get_removed_overlay_count(lua_State *L);
+	static int32 effect_set_owner(lua_State *L);
+	static int32 effect_get_range(lua_State *L);
+	static int32 effect_get_count_limit(lua_State *L);
+	static int32 duel_get_master_rule(lua_State *L);
+	static int32 duel_read_card(lua_State *L);
+	static int32 duel_exile(lua_State *L);
+	static int32 duel_disable_action_check(lua_State *L);
+	static int32 duel_setmetatable(lua_State *L);
+	static int32 duel_move_turn_count(lua_State *L);
+	static int32 duel_get_cards_in_zone(lua_State *L);
+	static int32 duel_xyz_summon_by_rose(lua_State *L);
+	static int32 duel_load_script(lua_State *L);
+	static int32 duel_reset_time_limit(lua_State *L);
+	static int32 duel_set_summon_cancelable(lua_State *L);
+	static int32 duel_get_random_number(lua_State *L);
 	//card lib
 	static int32 card_get_code(lua_State *L);
 	static int32 card_get_origin_code(lua_State *L);
@@ -229,6 +251,8 @@ public:
 	static int32 card_is_able_to_extra_as_cost(lua_State *L);
 	static int32 card_is_able_to_deck_or_extra_as_cost(lua_State *L);
 	static int32 card_is_able_to_remove_as_cost(lua_State *L);
+	static int32 card_is_able_to_decrease_attack_as_cost(lua_State *L);
+	static int32 card_is_able_to_decrease_defense_as_cost(lua_State *L);
 	static int32 card_is_releasable(lua_State *L);
 	static int32 card_is_releasable_by_effect(lua_State *L);
 	static int32 card_is_discardable(lua_State *L);
@@ -357,7 +381,6 @@ public:
 	//Group functions
 	static int32 group_new(lua_State *L);
 	static int32 group_clone(lua_State *L);
-	static int32 group_from_cards(lua_State *L);
 	static int32 group_delete(lua_State *L);
 	static int32 group_keep_alive(lua_State *L);
 	static int32 group_clear(lua_State *L);
@@ -383,8 +406,6 @@ public:
 	static int32 group_get_sum(lua_State *L);
 	static int32 group_get_class_count(lua_State *L);
 	static int32 group_remove(lua_State *L);
-	static int32 group_merge(lua_State *L);
-	static int32 group_sub(lua_State *L);
 	static int32 group_equal(lua_State *L);
 	static int32 group_is_contains(lua_State *L);
 	static int32 group_search_card(lua_State *L);
@@ -567,6 +588,7 @@ public:
 	static int32 duel_get_overlay_count(lua_State *L);
 	static int32 duel_check_remove_overlay_card(lua_State *L);
 	static int32 duel_remove_overlay_card(lua_State *L);
+	static int32 duel_get_disable_field(lua_State *L);
 
 	static int32 duel_hint(lua_State *L);
 	static int32 duel_get_last_select_hint(lua_State *L);
