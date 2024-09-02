@@ -65,7 +65,7 @@ extern "C" DECL_DLLEXPORT intptr_t create_duel(uint_fast32_t seed) {
 	pduel->lua->preloaded = FALSE;
 	return (intptr_t)pduel;
 }
-extern "C" DECL_DLLEXPORT void start_duel(intptr_t pduel, int32 options) {
+extern "C" DECL_DLLEXPORT void start_duel(intptr_t pduel, uint32 options) {
 	duel* pd = (duel*)pduel;
 	if(!pd->lua->preloaded) {
 		pd->lua->preloaded = TRUE;
@@ -77,8 +77,12 @@ extern "C" DECL_DLLEXPORT void start_duel(intptr_t pduel, int32 options) {
 		pd->game_field->core.duel_rule = duel_rule;
 	else if(options & DUEL_OBSOLETE_RULING)		//provide backward compatibility with replay
 		pd->game_field->core.duel_rule = 1;
-	else if(!pd->game_field->core.duel_rule)
+	if (pd->game_field->core.duel_rule < 1 || pd->game_field->core.duel_rule > CURRENT_RULE)
 		pd->game_field->core.duel_rule = CURRENT_RULE;
+	if (pd->game_field->core.duel_rule == MASTER_RULE3) {
+		pd->game_field->player[0].szone_size = 8;
+		pd->game_field->player[1].szone_size = 8;
+	}
 	pd->game_field->core.shuffle_hand_check[0] = FALSE;
 	pd->game_field->core.shuffle_hand_check[1] = FALSE;
 	pd->game_field->core.shuffle_deck_check[0] = FALSE;
