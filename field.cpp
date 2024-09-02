@@ -55,25 +55,7 @@ bool tevent::operator< (const tevent& v) const {
 }
 field::field(duel* pduel) {
 	this->pduel = pduel;
-	infos.field_id = 1;
-	infos.copy_id = 1;
-	infos.can_shuffle = TRUE;
-	infos.turn_id = 0;
-	infos.turn_id_by_player[0] = 0;
-	infos.turn_id_by_player[1] = 0;
-	infos.card_id = 1;
-	infos.phase = 0;
-	infos.turn_player = 0;
 	for (int32 i = 0; i < 2; ++i) {
-		//cost[i].count = 0;
-		//cost[i].amount = 0;
-		player[i].lp = 8000;
-		player[i].start_count = 5;
-		player[i].draw_count = 1;
-		player[i].disabled_location = 0;
-		player[i].used_location = 0;
-		player[i].extra_p_count = 0;
-		player[i].tag_extra_p_count = 0;
 		player[i].list_mzone.resize(7, 0);
 		player[i].list_szone.resize(8, 0);
 		player[i].list_main.reserve(60);
@@ -82,8 +64,6 @@ field::field(duel* pduel) {
 		player[i].list_remove.reserve(75);
 		player[i].list_extra.reserve(30);
 	}
-	returns = { 0 };
-	temp_card = nullptr;
 }
 void field::reload_field_info() {
 	pduel->write_buffer8(MSG_RELOAD_FIELD);
@@ -300,10 +280,10 @@ void field::move_card(uint8 playerid, card* pcard, uint8 location, uint8 sequenc
 				if (playerid == preplayer && sequence == presequence)
 					return;
 				if(location == LOCATION_MZONE) {
-					if(sequence >= player[playerid].list_mzone.size() || player[playerid].list_mzone[sequence])
+					if(sequence >= (int32)player[playerid].list_mzone.size() || player[playerid].list_mzone[sequence])
 						return;
 				} else {
-					if(sequence >= player[playerid].list_szone.size() || player[playerid].list_szone[sequence])
+					if(sequence >= player[playerid].szone_size || player[playerid].list_szone[sequence])
 						return;
 				}
 				if(preplayer == playerid) {
@@ -517,14 +497,14 @@ card* field::get_field_card(uint8 playerid, uint32 general_location, uint8 seque
 		return nullptr;
 	switch(general_location) {
 	case LOCATION_MZONE: {
-		if(sequence < player[playerid].list_mzone.size())
+		if(sequence < (int32)player[playerid].list_mzone.size())
 			return player[playerid].list_mzone[sequence];
 		else
 			return nullptr;
 		break;
 	}
 	case LOCATION_SZONE: {
-		if(sequence < player[playerid].list_szone.size())
+		if(sequence < player[playerid].szone_size)
 			return player[playerid].list_szone[sequence];
 		else
 			return nullptr;
@@ -591,7 +571,7 @@ int32 field::is_location_useable(uint8 playerid, uint32 general_location, uint8 
 		return FALSE;
 	uint32 flag = player[playerid].disabled_location | player[playerid].used_location;
 	if (general_location == LOCATION_MZONE) {
-		if (sequence >= (int32)player[0].list_mzone.size())
+		if (sequence >= (int32)player[playerid].list_mzone.size())
 			return FALSE;
 		if(flag & (0x1u << sequence))
 			return FALSE;
@@ -601,7 +581,7 @@ int32 field::is_location_useable(uint8 playerid, uint32 general_location, uint8 
 				return FALSE;
 		}
 	} else if (general_location == LOCATION_SZONE) {
-		if (sequence >= (int32)player[0].list_szone.size())
+		if (sequence >= player[playerid].szone_size)
 			return FALSE;
 		if(flag & (0x100u << sequence))
 			return FALSE;
@@ -686,7 +666,7 @@ int32 field::get_spsummonable_count_fromex(card* pcard, uint8 playerid, uint8 up
 		pcard->current.location = LOCATION_EXTRA;
 	}
 	int32 spsummonable_count = 0;
-	if(core.duel_rule >= 4 && !is_player_affected_by_effect(playerid, EFFECT_EXTRA_TOMAIN_KOISHI) && !pcard->is_affected_by_effect(EFFECT_EXTRA_TOMAIN_KOISHI))
+	if(core.duel_rule >= NEW_MASTER_RULE && !is_player_affected_by_effect(playerid, EFFECT_EXTRA_TOMAIN_KOISHI) && !pcard->is_affected_by_effect(EFFECT_EXTRA_TOMAIN_KOISHI))
 		spsummonable_count = get_spsummonable_count_fromex_rule4(pcard, playerid, uplayer, zone, list);
 	else
 	{
@@ -1153,7 +1133,7 @@ void field::refresh_player_info(uint8 playerid) {
 		if (player[playerid].list_mzone[i])
 			used_flag |= 0x1U << i;
 	}
-	for (int32 i = 0; i < (int32)player[playerid].list_szone.size(); ++i) {
+	for (int32 i = 0; i < player[playerid].szone_size; ++i) {
 		if (player[playerid].list_szone[i])
 			used_flag |= 0x100U << i;
 	}
@@ -2318,6 +2298,9 @@ int32 field::check_spsummon_counter(uint8 playerid, uint8 ct) {
 		}
 	}
 	return TRUE;
+}
+bool field::is_select_hide_deck_sequence(uint8 playerid) {
+	return !core.select_deck_sequence_revealed && !(core.duel_options & DUEL_REVEAL_DECK_SEQ) && playerid == core.selecting_player;
 }
 int32 field::check_lp_cost(uint8 playerid, uint32 lp, uint32 must_pay) {
 	effect_set eset;
