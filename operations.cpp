@@ -1514,13 +1514,15 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 				core.select_effects.clear();
 				core.select_options.clear();
 				if(res > 0) {
-					core.select_effects.push_back(0);
+					core.select_effects.push_back(nullptr);
 					core.select_options.push_back(1);
 				}
 				for(int32 i = 0; i < eset.size(); ++i) {
 					core.select_effects.push_back(eset[i]);
 					core.select_options.push_back(eset[i]->description);
 				}
+				if (core.select_options.empty())
+					return TRUE;
 				if(core.select_options.size() == 1)
 					returns.ivalue[0] = 0;
 				else
@@ -1890,6 +1892,16 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		core.phase_action = TRUE;
 		target->current.reason = REASON_SUMMON;
 		target->summon_player = sumplayer;
+		if (core.current_chain.size() == 0) {
+			if (core.is_gemini_summoning) {
+				target->set_status(STATUS_SUMMONING, FALSE);
+				target->set_status(STATUS_FLIP_SUMMONING, TRUE);
+			}
+			else {
+				target->set_status(STATUS_SUMMONING, TRUE);
+				target->set_status(STATUS_FLIP_SUMMONING, FALSE);
+			}
+		}
 		pduel->write_buffer8(MSG_SUMMONING);
 		pduel->write_buffer32(target->data.code);
 		pduel->write_buffer32(target->get_info_location());
@@ -1914,14 +1926,6 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		return FALSE;
 	}
 	case 13: {
-		if (core.is_gemini_summoning) {
-			target->set_status(STATUS_SUMMONING, FALSE);
-			target->set_status(STATUS_FLIP_SUMMONING, TRUE);
-		}
-		else {
-			target->set_status(STATUS_SUMMONING, TRUE);
-			target->set_status(STATUS_FLIP_SUMMONING, FALSE);
-		}
 		target->set_status(STATUS_SUMMON_DISABLED, FALSE);
 		target->set_status(STATUS_FLIP_SUMMON_DISABLED, FALSE);
 		raise_event(target, EVENT_SUMMON, proc, 0, sumplayer, sumplayer, 0);
@@ -2885,6 +2889,7 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		set_control(target, target->current.controler, 0, 0);
 		core.phase_action = TRUE;
 		target->current.reason_effect = core.units.begin()->peffect;
+		target->set_status(STATUS_SUMMONING, TRUE);
 		pduel->write_buffer8(MSG_SPSUMMONING);
 		pduel->write_buffer32(target->data.code);
 		pduel->write_buffer32(target->get_info_location());
@@ -2926,7 +2931,6 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		return FALSE;
 	}
 	case 10: {
-		target->set_status(STATUS_SUMMONING, TRUE);
 		target->set_status(STATUS_SUMMON_DISABLED, FALSE);
 		raise_event(target, EVENT_SPSUMMON, core.units.begin()->peffect, 0, sumplayer, sumplayer, 0);
 		process_instant_event();
@@ -3102,13 +3106,14 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		}
 		card* pcard = *pgroup->it;
 		++pgroup->it;
+		set_control(pcard, pcard->current.controler, 0, 0);
+		pcard->set_status(STATUS_SUMMONING, TRUE);
 		pduel->write_buffer8(MSG_SPSUMMONING);
 		pduel->write_buffer32(pcard->data.code);
 		pduel->write_buffer8(pcard->current.controler);
 		pduel->write_buffer8(pcard->current.location);
 		pduel->write_buffer8(pcard->current.sequence);
 		pduel->write_buffer8(pcard->current.position);
-		set_control(pcard, pcard->current.controler, 0, 0);
 		if(pgroup->it != pgroup->container.end())
 			core.units.begin()->step = 22;
 		return FALSE;
@@ -3117,7 +3122,6 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		group* pgroup = core.units.begin()->ptarget;
 		card_set cset;
 		for(auto& pcard : pgroup->container) {
-			pcard->set_status(STATUS_SUMMONING, TRUE);
 			if(!pcard->is_affected_by_effect(EFFECT_CANNOT_DISABLE_SPSUMMON)) {
 				cset.insert(pcard);
 			}
@@ -4971,7 +4975,7 @@ int32 field::change_position(uint16 step, group * targets, effect * reason_effec
 					flips.insert(pcard);
 				}
 				if(enable) {
-					if(!reason_effect || !(reason_effect->type & 0x7f0) || pcard->current.location != LOCATION_MZONE)
+					if(!reason_effect || !(reason_effect->type & EFFECT_TYPES_CHAIN_LINK) || pcard->current.location != LOCATION_MZONE)
 						pcard->enable_field_effect(true);
 					else
 						core.delayed_enable_set.insert(pcard);
