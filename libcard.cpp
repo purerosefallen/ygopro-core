@@ -3507,7 +3507,6 @@ int32 scriptlib::card_set_unique_onfield(lua_State *L) {
 	peffect->owner = pcard;
 	peffect->type = EFFECT_TYPE_SINGLE;
 	peffect->code = EFFECT_UNIQUE_CHECK;
-	peffect->flag[0] = EFFECT_FLAG_COPY_INHERIT;
 	pcard->add_effect(peffect);
 	pcard->unique_effect = peffect;
 	if(pcard->current.location & location)

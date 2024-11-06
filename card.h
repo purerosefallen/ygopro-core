@@ -26,6 +26,9 @@ struct chain;
 
 using card_set = std::set<card*, card_sort>;
 using card_vector = std::vector<card*>;
+using effect_container = std::multimap<uint32, effect*>;
+using effect_indexer = std::unordered_map<effect*, effect_container::iterator>;
+using effect_collection = std::unordered_set<effect*>;
 
 struct card_state {
 	uint32 code{ 0 };
@@ -116,8 +119,6 @@ public:
 			return std::hash<uint16>()(v.second);
 		}
 	};
-	using effect_container = std::multimap<uint32, effect*>;
-	using effect_indexer = std::unordered_map<effect*, effect_container::iterator>;
 	using effect_relation = std::unordered_set<std::pair<effect*, uint16>, effect_relation_hash>;
 	using relation_map = std::unordered_map<card*, uint32>;
 	using counter_map = std::map<uint16, uint16>;
@@ -226,7 +227,7 @@ public:
 	bool is_extra_deck_monster() const { return !!(data.type & TYPES_EXTRA_DECK); }
 
 	int32 get_infos(byte* buf, uint32 query_flag, int32 use_cache = TRUE);
-	uint32 get_info_location();
+	uint32 get_info_location() const;
 	uint32 get_original_code() const;
 	std::tuple<uint32, uint32> get_original_code_rule() const;
 	uint32 get_code();
@@ -296,8 +297,7 @@ public:
 	void cancel_field_effect();
 	void enable_field_effect(bool enabled);
 	int32 add_effect(effect* peffect);
-	void remove_effect(effect* peffect);
-	void remove_effect(effect* peffect, effect_container::iterator it);
+	effect_indexer::iterator remove_effect(effect* peffect);
 	int32 copy_effect(uint32 code, uint32 reset, int32 count);
 	int32 replace_effect(uint32 code, uint32 reset, int32 count);
 	void reset(uint32 id, uint32 reset_type);
@@ -326,6 +326,7 @@ public:
 	void set_material(card_set* materials);
 	void add_card_target(card* pcard);
 	void cancel_card_target(card* pcard);
+	void delete_card_target(uint32 send_msg);
 	void clear_card_target();
 	void set_special_summon_status(effect* peffect);
 

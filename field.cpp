@@ -192,7 +192,7 @@ void field::add_card(uint8 playerid, card* pcard, uint8 location, uint8 sequence
 	refresh_player_info(playerid);
 }
 void field::remove_card(card* pcard) {
-	if (pcard->current.controler == PLAYER_NONE || pcard->current.location == 0)
+	if (!check_playerid(pcard->current.controler) || pcard->current.location == 0)
 		return;
 	uint8 playerid = pcard->current.controler;
 	switch (pcard->current.location) {
@@ -1186,13 +1186,8 @@ void field::tag_swap(uint8 playerid) {
 		pduel->write_buffer32(pcard->data.code | (pcard->is_position(POS_FACEUP) ? 0x80000000 : 0));
 }
 void field::add_effect(effect* peffect, uint8 owner_player) {
-	if (!peffect->handler) {
-		peffect->flag[0] |= EFFECT_FLAG_FIELD_ONLY;
-		peffect->handler = peffect->owner;
-		peffect->effect_owner = owner_player;
-		peffect->id = infos.field_id++;
-	}
-	peffect->card_type = peffect->owner->data.type;
+	if (effects.indexer.find(peffect) != effects.indexer.end())
+		return;
 	effect_container::iterator it;
 	if (!(peffect->type & EFFECT_TYPE_ACTIONS)) {
 		it = effects.aura_effect.emplace(peffect->code, peffect);
@@ -1203,9 +1198,9 @@ void field::add_effect(effect* peffect, uint8 owner_player) {
 	} else {
 		if (peffect->type & EFFECT_TYPE_IGNITION)
 			it = effects.ignition_effect.emplace(peffect->code, peffect);
-		else if (peffect->type & EFFECT_TYPE_TRIGGER_O && peffect->type & EFFECT_TYPE_FIELD)
+		else if (peffect->type & EFFECT_TYPE_TRIGGER_O)
 			it = effects.trigger_o_effect.emplace(peffect->code, peffect);
-		else if (peffect->type & EFFECT_TYPE_TRIGGER_F && peffect->type & EFFECT_TYPE_FIELD)
+		else if (peffect->type & EFFECT_TYPE_TRIGGER_F)
 			it = effects.trigger_f_effect.emplace(peffect->code, peffect);
 		else if (peffect->type & EFFECT_TYPE_QUICK_O)
 			it = effects.quick_o_effect.emplace(peffect->code, peffect);
@@ -1215,7 +1210,16 @@ void field::add_effect(effect* peffect, uint8 owner_player) {
 			it = effects.activate_effect.emplace(peffect->code, peffect);
 		else if (peffect->type & EFFECT_TYPE_CONTINUOUS)
 			it = effects.continuous_effect.emplace(peffect->code, peffect);
+		else
+			return;
 	}
+	if (!peffect->handler) {
+		peffect->flag[0] |= EFFECT_FLAG_FIELD_ONLY;
+		peffect->handler = peffect->owner;
+		peffect->effect_owner = owner_player;
+		peffect->id = infos.field_id++;
+	}
+	peffect->card_type = peffect->owner->data.type;
 	effects.indexer.emplace(peffect, it);
 	if(peffect->is_flag(EFFECT_FLAG_FIELD_ONLY)) {
 		if(peffect->is_disable_related())
@@ -1253,7 +1257,7 @@ void field::remove_effect(effect* peffect) {
 	auto eit = effects.indexer.find(peffect);
 	if (eit == effects.indexer.end())
 		return;
-	auto it = eit->second;
+	auto& it = eit->second;
 	if (!(peffect->type & EFFECT_TYPE_ACTIONS)) {
 		effects.aura_effect.erase(it);
 		if(peffect->code == EFFECT_SPSUMMON_COUNT_LIMIT)
@@ -1312,16 +1316,14 @@ void field::remove_effect(effect* peffect) {
 }
 void field::remove_oath_effect(effect* reason_effect) {
 	for(auto oeit = effects.oath.begin(); oeit != effects.oath.end();) {
-		if(oeit->second == reason_effect) {
-			effect* peffect = oeit->first;
-			oeit = effects.oath.erase(oeit);
+		auto rm = oeit++;
+		if(rm->second == reason_effect) {
+			effect* peffect = rm->first;
 			if(peffect->is_flag(EFFECT_FLAG_FIELD_ONLY))
 				remove_effect(peffect);
 			else
 				peffect->handler->remove_effect(peffect);
 		}
-		else
-			++oeit;
 	}
 }
 void field::release_oath_relation(effect* reason_effect) {
@@ -1334,7 +1336,7 @@ void field::reset_phase(uint32 phase) {
 		auto rm = eit++;
 		if((*rm)->reset(phase, RESET_PHASE)) {
 			if((*rm)->is_flag(EFFECT_FLAG_FIELD_ONLY))
-				remove_effect((*rm));
+				remove_effect(*rm);
 			else
 				(*rm)->handler->remove_effect((*rm));
 		}
@@ -1344,7 +1346,7 @@ void field::reset_chain() {
 	for(auto eit = effects.cheff.begin(); eit != effects.cheff.end();) {
 		auto rm = eit++;
 		if((*rm)->is_flag(EFFECT_FLAG_FIELD_ONLY))
-			remove_effect((*rm));
+			remove_effect(*rm);
 		else
 			(*rm)->handler->remove_effect((*rm));
 	}
@@ -1391,12 +1393,14 @@ void field::filter_field_effect(uint32 code, effect_set* eset, uint8 sort) {
 	if(sort)
 		eset->sort();
 }
+//Get all cards in the target range of a EFFECT_TYPE_FIELD effect
 void field::filter_affected_cards(effect* peffect, card_set* cset) {
-	if((peffect->type & EFFECT_TYPE_ACTIONS) || !(peffect->type & EFFECT_TYPE_FIELD)
-		|| peffect->is_flag(EFFECT_FLAG_PLAYER_TARGET | EFFECT_FLAG_SPSUM_PARAM))
+	if ((peffect->type & EFFECT_TYPE_ACTIONS) || !(peffect->type & EFFECT_TYPE_FIELD))
+		return;
+	if (peffect->is_flag(EFFECT_FLAG_PLAYER_TARGET | EFFECT_FLAG_SPSUM_PARAM))
 		return;
 	uint8 self = peffect->get_handler_player();
-	if(self == PLAYER_NONE)
+	if (!check_playerid(self))
 		return;
 	std::vector<card_vector*> cvec;
 	uint16 range = peffect->s_range;
@@ -1429,11 +1433,11 @@ void field::filter_inrange_cards(effect* peffect, card_set* cset) {
 	if(peffect->is_flag(EFFECT_FLAG_PLAYER_TARGET | EFFECT_FLAG_SPSUM_PARAM))
 		return;
 	uint8 self = peffect->get_handler_player();
-	if(self == PLAYER_NONE)
+	if (!check_playerid(self))
 		return;
 	uint16 range = peffect->s_range;
 	std::vector<card_vector*> cvec;
-	for(uint32 p = 0; p < 2; ++p) {
+	for(int32 p = 0; p < 2; ++p) {
 		if(range & LOCATION_MZONE)
 			cvec.push_back(&player[self].list_mzone);
 		if(range & LOCATION_SZONE)
@@ -1453,7 +1457,7 @@ void field::filter_inrange_cards(effect* peffect, card_set* cset) {
 	}
 	for(auto& cvit : cvec) {
 		for(auto& pcard : *cvit) {
-			if(pcard && peffect->is_fit_target_function(pcard))
+			if (pcard && (!(pcard->current.location & LOCATION_ONFIELD) || !pcard->is_treated_as_not_on_field()) && peffect->is_fit_target_function(pcard))
 				cset->insert(pcard);
 		}
 	}
@@ -1988,11 +1992,13 @@ void field::get_xyz_material(lua_State* L, card* scard, int32 findex, uint32 lv,
 	}
 }
 void field::get_overlay_group(uint8 self, uint8 s, uint8 o, card_set* pset) {
+	if (!check_playerid(self))
+		return;
 	uint8 c = s;
 	for(int32 p = 0; p < 2; ++p) {
 		if(c) {
 			for(auto& pcard : player[self].list_mzone) {
-				if(pcard && !pcard->get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP) && pcard->xyz_materials.size())
+				if(pcard && !pcard->is_treated_as_not_on_field() && pcard->xyz_materials.size())
 					pset->insert(pcard->xyz_materials.begin(), pcard->xyz_materials.end());
 			}
 		}
@@ -2001,12 +2007,14 @@ void field::get_overlay_group(uint8 self, uint8 s, uint8 o, card_set* pset) {
 	}
 }
 int32 field::get_overlay_count(uint8 self, uint8 s, uint8 o) {
+	if (!check_playerid(self))
+		return 0;
 	uint8 c = s;
 	int32 count = 0;
 	for(int32 p = 0; p < 2; ++p) {
 		if(c) {
 			for(auto& pcard : player[self].list_mzone) {
-				if(pcard && !pcard->get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP))
+				if(pcard && !pcard->is_treated_as_not_on_field())
 					count += (int32)pcard->xyz_materials.size();
 			}
 		}
@@ -2118,6 +2126,8 @@ void field::adjust_self_destroy_set() {
 }
 void field::erase_grant_effect(effect* peffect) {
 	auto eit = effects.grant_effect.find(peffect);
+	if (eit == effects.grant_effect.end())
+		return;
 	for(auto& it : eit->second)
 		it.first->remove_effect(it.second);
 	effects.grant_effect.erase(eit);
@@ -2126,7 +2136,10 @@ int32 field::adjust_grant_effect() {
 	int32 adjusted = FALSE;
 	for(auto& eit : effects.grant_effect) {
 		effect* peffect = eit.first;
-		if(!peffect->label_object)
+		if (peffect->object_type != PARAM_TYPE_EFFECT)
+			continue;
+		effect* geffect = (effect*)peffect->get_label_object();
+		if (geffect->type & EFFECT_TYPE_GRANT)
 			continue;
 		card_set cset;
 		if(peffect->is_available())
@@ -2142,8 +2155,10 @@ int32 field::adjust_grant_effect() {
 			if(!pcard->is_affect_by_effect(peffect) || !cset.count(pcard))
 				remove_set.insert(pcard);
 		}
+		//X gains an effect from itself will break card::remove_effect
+		if (!peffect->is_flag(EFFECT_FLAG_FIELD_ONLY))
+			add_set.erase(peffect->handler);
 		for(auto& pcard : add_set) {
-			effect* geffect = (effect*)peffect->get_label_object();
 			effect* ceffect = geffect->clone();
 			ceffect->owner = pcard;
 			pcard->add_effect(ceffect);
@@ -2169,7 +2184,7 @@ void field::add_unique_card(card* pcard) {
 }
 void field::remove_unique_card(card* pcard) {
 	uint8 con = pcard->current.controler;
-	if(con == PLAYER_NONE)
+	if (!check_playerid(con))
 		return;
 	if(pcard->unique_pos[0])
 		core.unique_cards[con].erase(pcard);
@@ -3327,7 +3342,7 @@ int32 field::is_player_can_remove_overlay_card(uint8 playerid, card * pcard, uin
 		}
 		minc = eset[i]->get_value(param_count);
 	}
-	if((pcard && pcard->xyz_materials.size() >= minc) || (!pcard && get_overlay_count(playerid, s, o) >= minc))
+	if((pcard && (int32)pcard->xyz_materials.size() >= minc) || (!pcard && get_overlay_count(playerid, s, o) >= minc))
 		return TRUE;
 	auto pr = effects.continuous_effect.equal_range(EFFECT_OVERLAY_REMOVE_REPLACE);
 	tevent e;
