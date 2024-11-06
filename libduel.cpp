@@ -574,7 +574,7 @@ int32 scriptlib::duel_synchro_summon(lua_State *L) {
 			check_param(L, PARAM_TYPE_GROUP, 4);
 			group* pgroup = *(group**) lua_touserdata(L, 4);
 			mg = pduel->new_group(pgroup->container);
-			mg->is_readonly = 1;
+			mg->is_readonly = GTYPE_READ_ONLY;
 		}
 	}
 	int32 minc = 0;
@@ -615,7 +615,7 @@ int32 scriptlib::duel_xyz_summon(lua_State *L) {
 		check_param(L, PARAM_TYPE_GROUP, 3);
 		group* pgroup = *(group**)lua_touserdata(L, 3);
 		materials = pduel->new_group(pgroup->container);
-		materials->is_readonly = 1;
+		materials->is_readonly = GTYPE_READ_ONLY;
 	}
 	int32 minc = 0;
 	if(lua_gettop(L) >= 4)
@@ -655,7 +655,7 @@ int32 scriptlib::duel_link_summon(lua_State *L) {
 		check_param(L, PARAM_TYPE_GROUP, 3);
 		group* pgroup = *(group**)lua_touserdata(L, 3);
 		materials = pduel->new_group(pgroup->container);
-		materials->is_readonly = 1;
+		materials->is_readonly = GTYPE_READ_ONLY;
 	}
 	if(lua_gettop(L) >= 4) {
 		if(!lua_isnil(L, 4)) {
@@ -1836,7 +1836,7 @@ int32 scriptlib::duel_shuffle_setcard(lua_State *L) {
 	pduel->write_buffer8(MSG_SHUFFLE_SET_CARD);
 	pduel->write_buffer8(loc);
 	pduel->write_buffer8(ct);
-	for(uint32 i = 0; i < ct; ++i) {
+	for(int32 i = 0; i < ct; ++i) {
 		card* pcard = ms[i];
 		pduel->write_buffer32(pcard->get_info_location());
 		if(loc == LOCATION_MZONE)
@@ -1849,7 +1849,7 @@ int32 scriptlib::duel_shuffle_setcard(lua_State *L) {
 	pduel->game_field->raise_event(&pgroup->container, EVENT_MOVE, pduel->game_field->core.reason_effect, 0, pduel->game_field->core.reason_player, tp, 0);
 	pduel->game_field->process_single_event();
 	pduel->game_field->process_instant_event();
-	for(uint32 i = 0; i < ct; ++i) {
+	for(int32 i = 0; i < ct; ++i) {
 		if(ms[i]->xyz_materials.size())
 			pduel->write_buffer32(ms[i]->get_info_location());
 		else
@@ -3297,7 +3297,7 @@ int32 scriptlib::duel_select_target(lua_State *L) {
 			return 0;
 		if(!ch->target_cards) {
 			ch->target_cards = pduel->new_group();
-			ch->target_cards->is_readonly = 1;
+			ch->target_cards->is_readonly = GTYPE_READ_ONLY;
 		}
 		group* tg = ch->target_cards;
 		effect* peffect = ch->triggering_effect;
@@ -3354,10 +3354,10 @@ int32 scriptlib::duel_check_must_material(lua_State *L) {
 		pduel = interpreter::get_duel_info(L);
 	if(mgroup) {
 		pgroup = pduel->new_group(mgroup->container);
-		pgroup->is_readonly = 1;
+		pgroup->is_readonly = GTYPE_READ_ONLY;
 	} else if(mcard) {
 		pgroup = pduel->new_group(mcard);
-		pgroup->is_readonly = 1;
+		pgroup->is_readonly = GTYPE_READ_ONLY;
 	} else
 		pgroup = 0;
 	uint32 limit = (uint32)lua_tointeger(L, 3);
@@ -3652,7 +3652,7 @@ int32 scriptlib::duel_set_target_card(lua_State *L) {
 		return 0;
 	if(!ch->target_cards) {
 		ch->target_cards = pduel->new_group();
-		ch->target_cards->is_readonly = 1;
+		ch->target_cards->is_readonly = GTYPE_READ_ONLY;
 	}
 	group* targets = ch->target_cards;
 	effect* peffect = ch->triggering_effect;
@@ -3743,10 +3743,10 @@ int32 scriptlib::duel_set_operation_info(lua_State *L) {
 		return 0;
 	if(pgroup) {
 		pg = pduel->new_group(pgroup->container);
-		pg->is_readonly = 1;
+		pg->is_readonly = GTYPE_READ_ONLY;
 	} else if(pcard) {
 		pg = pduel->new_group(pcard);
-		pg->is_readonly = 1;
+		pg->is_readonly = GTYPE_READ_ONLY;
 	} else
 		pg = nullptr;
 	optarget opt;
@@ -4314,6 +4314,11 @@ int32 scriptlib::duel_announce_card(lua_State * L) {
 		lua_pushinteger(L, pduel->game_field->returns.ivalue[0]);
 		return 1;
 	});
+}
+int32 scriptlib::duel_announce_card_silent(lua_State * L) {
+	duel* pduel = interpreter::get_duel_info(L);
+	pduel->game_field->core.announce_card_silent = TRUE;
+	return duel_announce_card(L);
 }
 int32 scriptlib::duel_announce_type(lua_State * L) {
 	check_action_permission(L);
@@ -5066,6 +5071,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "XyzSummonByRose", scriptlib::duel_xyz_summon_by_rose },
 	{ "LoadScript", scriptlib::duel_load_script },
 	{ "AnnounceCardFilter", scriptlib::duel_announce_card }, // For compat
+	{ "AnnounceCardSilent", scriptlib::duel_announce_card_silent },
 	{ "ResetTimeLimit", scriptlib::duel_reset_time_limit },
 	{ "SetSummonCancelable", scriptlib::duel_set_summon_cancelable },
 	{ "GetRandomNumber", scriptlib::duel_get_random_number },

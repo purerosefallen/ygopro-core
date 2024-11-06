@@ -114,7 +114,7 @@ void field::remove_overlay_card(uint32 reason, card* pcard, uint32 rplayer, uint
 }
 void field::get_control(card_set* targets, effect* reason_effect, uint32 reason_player, uint32 playerid, uint32 reset_phase, uint32 reset_count, uint32 zone) {
 	group* ng = pduel->new_group(*targets);
-	ng->is_readonly = 1;
+	ng->is_readonly = GTYPE_READ_ONLY;
 	add_process(PROCESSOR_GET_CONTROL, 0, reason_effect, ng, 0, (reason_player << 28) + (playerid << 24) + (reset_phase << 8) + reset_count, zone);
 }
 void field::get_control(card* target, effect* reason_effect, uint32 reason_player, uint32 playerid, uint32 reset_phase, uint32 reset_count, uint32 zone) {
@@ -124,9 +124,9 @@ void field::get_control(card* target, effect* reason_effect, uint32 reason_playe
 }
 void field::swap_control(effect* reason_effect, uint32 reason_player, card_set* targets1, card_set* targets2, uint32 reset_phase, uint32 reset_count) {
 	group* ng1 = pduel->new_group(*targets1);
-	ng1->is_readonly = 1;
+	ng1->is_readonly = GTYPE_READ_ONLY;
 	group* ng2 = pduel->new_group(*targets2);
-	ng2->is_readonly = 1;
+	ng2->is_readonly = GTYPE_READ_ONLY;
 	add_process(PROCESSOR_SWAP_CONTROL, 0, reason_effect, ng1, reason_player, reset_phase, reset_count, 0, ng2);
 }
 void field::swap_control(effect* reason_effect, uint32 reason_player, card* pcard1, card* pcard2, uint32 reset_phase, uint32 reset_count) {
@@ -176,7 +176,7 @@ void field::special_summon(card_set* target, uint32 sumtype, uint32 sumplayer, u
 		pcard->spsummon_param = (playerid << 24) + (nocheck << 16) + (nolimit << 8) + positions;
 	}
 	group* pgroup = pduel->new_group(*target);
-	pgroup->is_readonly = 1;
+	pgroup->is_readonly = GTYPE_READ_ONLY;
 	add_process(PROCESSOR_SPSUMMON, 0, core.reason_effect, pgroup, core.reason_player, zone);
 }
 void field::special_summon_step(card* target, uint32 sumtype, uint32 sumplayer, uint32 playerid, uint32 nocheck, uint32 nolimit, uint32 positions, uint32 zone) {
@@ -196,7 +196,7 @@ void field::special_summon_step(card* target, uint32 sumtype, uint32 sumplayer, 
 void field::special_summon_complete(effect* reason_effect, uint8 reason_player) {
 	group* ng = pduel->new_group();
 	ng->container.swap(core.special_summoning);
-	ng->is_readonly = 1;
+	ng->is_readonly = GTYPE_READ_ONLY;
 	core.hint_timing[reason_player] |= TIMING_SPSUMMON;
 	add_process(PROCESSOR_SPSUMMON, 1, reason_effect, ng, reason_player, 0);
 }
@@ -228,7 +228,7 @@ void field::destroy(card_set* targets, effect* reason_effect, uint32 reason, uin
 		++cit;
 	}
 	group* ng = pduel->new_group(*targets);
-	ng->is_readonly = 1;
+	ng->is_readonly = GTYPE_READ_ONLY;
 	add_process(PROCESSOR_DESTROY, 0, reason_effect, ng, reason, reason_player);
 }
 void field::destroy(card* target, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, uint32 destination, uint32 sequence) {
@@ -247,7 +247,7 @@ void field::release(card_set* targets, effect* reason_effect, uint32 reason, uin
 		pcard->sendto_param.set(pcard->owner, POS_FACEUP, LOCATION_GRAVE);
 	}
 	group* ng = pduel->new_group(*targets);
-	ng->is_readonly = 1;
+	ng->is_readonly = GTYPE_READ_ONLY;
 	add_process(PROCESSOR_RELEASE, 0, reason_effect, ng, reason, reason_player);
 }
 void field::release(card* target, effect* reason_effect, uint32 reason, uint32 reason_player) {
@@ -283,7 +283,7 @@ void field::send_to(card_set* targets, effect* reason_effect, uint32 reason, uin
 		pcard->sendto_param.set(p, pos, destination, sequence);
 	}
 	group* ng = pduel->new_group(*targets);
-	ng->is_readonly = 1;
+	ng->is_readonly = GTYPE_READ_ONLY;
 	add_process(PROCESSOR_SENDTO, 0, reason_effect, ng, reason, reason_player, send_activating);
 }
 void field::send_to(card* target, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, uint32 destination, uint32 sequence, uint32 position, uint8 send_activating) {
@@ -301,7 +301,7 @@ void field::move_to_field(card* target, uint32 move_player, uint32 playerid, uin
 }
 void field::change_position(card_set* targets, effect* reason_effect, uint32 reason_player, uint32 au, uint32 ad, uint32 du, uint32 dd, uint32 flag, uint32 enable) {
 	group* ng = pduel->new_group(*targets);
-	ng->is_readonly = 1;
+	ng->is_readonly = GTYPE_READ_ONLY;
 	for(auto& pcard : *targets) {
 		if(pcard->current.position == POS_FACEUP_ATTACK)
 			pcard->position_param = au;
@@ -317,7 +317,7 @@ void field::change_position(card_set* targets, effect* reason_effect, uint32 rea
 }
 void field::change_position(card* target, effect* reason_effect, uint32 reason_player, uint32 npos, uint32 flag, uint32 enable) {
 	group* ng = pduel->new_group(target);
-	ng->is_readonly = 1;
+	ng->is_readonly = GTYPE_READ_ONLY;
 	target->position_param = npos;
 	target->position_param |= flag;
 	add_process(PROCESSOR_CHANGEPOS, 0, reason_effect, ng, reason_player, enable);
@@ -804,7 +804,7 @@ int32 field::remove_overlay_card(uint16 step, uint32 reason, card* pcard, uint8 
 			minc = eset[i]->get_value(param_count);
 		}
 		core.units.begin()->arg2 = (max << 16) + minc;
-		if((pcard && pcard->xyz_materials.size() >= minc) || (!pcard && get_overlay_count(rplayer, s, o) >= minc)) {
+		if((pcard && (int32)pcard->xyz_materials.size() >= minc) || (!pcard && get_overlay_count(rplayer, s, o) >= minc)) {
 			core.select_options.push_back(12);
 			core.select_effects.push_back(0);
 		}
@@ -865,13 +865,11 @@ int32 field::remove_overlay_card(uint16 step, uint32 reason, card* pcard, uint8 
 		}
 		core.select_cards.clear();
 		if(pcard) {
-			for(auto& mcard : pcard->xyz_materials)
-				core.select_cards.push_back(mcard);
+			core.select_cards.assign(pcard->xyz_materials.begin(), pcard->xyz_materials.end());
 		} else {
 			card_set cset;
 			get_overlay_group(rplayer, s, o, &cset);
-			for(auto& xcard : cset)
-				core.select_cards.push_back(xcard);
+			core.select_cards.assign(cset.begin(), cset.end());
 		}
 		pduel->write_buffer8(MSG_HINT);
 		pduel->write_buffer8(HINT_SELECTMSG);
@@ -1514,13 +1512,15 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 				core.select_effects.clear();
 				core.select_options.clear();
 				if(res > 0) {
-					core.select_effects.push_back(0);
+					core.select_effects.push_back(nullptr);
 					core.select_options.push_back(1);
 				}
 				for(int32 i = 0; i < eset.size(); ++i) {
 					core.select_effects.push_back(eset[i]);
 					core.select_options.push_back(eset[i]->description);
 				}
+				if (core.select_options.empty())
+					return TRUE;
 				if(core.select_options.size() == 1)
 					returns.ivalue[0] = 0;
 				else
@@ -1890,6 +1890,16 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		core.phase_action = TRUE;
 		target->current.reason = REASON_SUMMON;
 		target->summon_player = sumplayer;
+		if (core.current_chain.size() == 0) {
+			if (core.is_gemini_summoning) {
+				target->set_status(STATUS_SUMMONING, FALSE);
+				target->set_status(STATUS_FLIP_SUMMONING, TRUE);
+			}
+			else {
+				target->set_status(STATUS_SUMMONING, TRUE);
+				target->set_status(STATUS_FLIP_SUMMONING, FALSE);
+			}
+		}
 		pduel->write_buffer8(MSG_SUMMONING);
 		pduel->write_buffer32(target->data.code);
 		pduel->write_buffer32(target->get_info_location());
@@ -1914,14 +1924,6 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		return FALSE;
 	}
 	case 13: {
-		if (core.is_gemini_summoning) {
-			target->set_status(STATUS_SUMMONING, FALSE);
-			target->set_status(STATUS_FLIP_SUMMONING, TRUE);
-		}
-		else {
-			target->set_status(STATUS_SUMMONING, TRUE);
-			target->set_status(STATUS_FLIP_SUMMONING, FALSE);
-		}
 		target->set_status(STATUS_SUMMON_DISABLED, FALSE);
 		target->set_status(STATUS_FLIP_SUMMON_DISABLED, FALSE);
 		raise_event(target, EVENT_SUMMON, proc, 0, sumplayer, sumplayer, 0);
@@ -2885,6 +2887,7 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		set_control(target, target->current.controler, 0, 0);
 		core.phase_action = TRUE;
 		target->current.reason_effect = core.units.begin()->peffect;
+		target->set_status(STATUS_SUMMONING, TRUE);
 		pduel->write_buffer8(MSG_SPSUMMONING);
 		pduel->write_buffer32(target->data.code);
 		pduel->write_buffer32(target->get_info_location());
@@ -2926,7 +2929,6 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		return FALSE;
 	}
 	case 10: {
-		target->set_status(STATUS_SUMMONING, TRUE);
 		target->set_status(STATUS_SUMMON_DISABLED, FALSE);
 		raise_event(target, EVENT_SPSUMMON, core.units.begin()->peffect, 0, sumplayer, sumplayer, 0);
 		process_instant_event();
@@ -3102,13 +3104,14 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		}
 		card* pcard = *pgroup->it;
 		++pgroup->it;
+		set_control(pcard, pcard->current.controler, 0, 0);
+		pcard->set_status(STATUS_SUMMONING, TRUE);
 		pduel->write_buffer8(MSG_SPSUMMONING);
 		pduel->write_buffer32(pcard->data.code);
 		pduel->write_buffer8(pcard->current.controler);
 		pduel->write_buffer8(pcard->current.location);
 		pduel->write_buffer8(pcard->current.sequence);
 		pduel->write_buffer8(pcard->current.position);
-		set_control(pcard, pcard->current.controler, 0, 0);
 		if(pgroup->it != pgroup->container.end())
 			core.units.begin()->step = 22;
 		return FALSE;
@@ -3117,7 +3120,6 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		group* pgroup = core.units.begin()->ptarget;
 		card_set cset;
 		for(auto& pcard : pgroup->container) {
-			pcard->set_status(STATUS_SUMMONING, TRUE);
 			if(!pcard->is_affected_by_effect(EFFECT_CANNOT_DISABLE_SPSUMMON)) {
 				cset.insert(pcard);
 			}
@@ -3661,7 +3663,7 @@ int32 field::destroy(uint16 step, group * targets, effect * reason_effect, uint3
 	}
 	case 4: {
 		group* sendtargets = pduel->new_group(targets->container);
-		sendtargets->is_readonly = 1;
+		sendtargets->is_readonly = GTYPE_READ_ONLY;
 		for(auto& pcard : sendtargets->container) {
 			pcard->set_status(STATUS_DESTROY_CONFIRMED, FALSE);
 			uint32 dest = pcard->sendto_param.location;
@@ -3907,7 +3909,7 @@ int32 field::release(uint16 step, group * targets, effect * reason_effect, uint3
 	}
 	case 3: {
 		group* sendtargets = pduel->new_group(targets->container);
-		sendtargets->is_readonly = 1;
+		sendtargets->is_readonly = GTYPE_READ_ONLY;
 		operation_replace(EFFECT_SEND_REPLACE, 5, sendtargets);
 		add_process(PROCESSOR_SENDTO, 1, reason_effect, sendtargets, reason | REASON_RELEASE, reason_player);
 		return FALSE;
@@ -4971,7 +4973,7 @@ int32 field::change_position(uint16 step, group * targets, effect * reason_effec
 					flips.insert(pcard);
 				}
 				if(enable) {
-					if(!reason_effect || !(reason_effect->type & 0x7f0) || pcard->current.location != LOCATION_MZONE)
+					if(!reason_effect || !(reason_effect->type & EFFECT_TYPES_CHAIN_LINK) || pcard->current.location != LOCATION_MZONE)
 						pcard->enable_field_effect(true);
 					else
 						core.delayed_enable_set.insert(pcard);
