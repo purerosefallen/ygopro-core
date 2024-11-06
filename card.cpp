@@ -461,7 +461,7 @@ int32 card::get_infos(byte* buf, uint32 query_flag, int32 use_cache) {
 	buffer_write<uint32_t>(finalize, query_flag);
 	return (int32)(p - buf);
 }
-uint32 card::get_info_location() {
+uint32 card::get_info_location() const {
 	if(overlay_target) {
 		uint32 c = overlay_target->current.controler;
 		uint32 l = overlay_target->current.location | LOCATION_OVERLAY;
@@ -1173,21 +1173,18 @@ uint32 card::get_attribute() {
 	if(temp.attribute != UINT32_MAX) // prevent recursion, return the former value
 		return temp.attribute;
 	effect_set effects;
-	int32 attribute = data.attribute;
+	auto attribute = data.attribute;
 	temp.attribute = data.attribute;
 	filter_effect(EFFECT_ADD_ATTRIBUTE, &effects, FALSE);
-	filter_effect(EFFECT_REMOVE_ATTRIBUTE, &effects);
+	filter_effect(EFFECT_REMOVE_ATTRIBUTE, &effects, FALSE);
+	filter_effect(EFFECT_CHANGE_ATTRIBUTE, &effects);
 	for (int32 i = 0; i < effects.size(); ++i) {
 		if (effects[i]->code == EFFECT_ADD_ATTRIBUTE)
 			attribute |= effects[i]->get_value(this);
-		else
+		else if (effects[i]->code == EFFECT_REMOVE_ATTRIBUTE)
 			attribute &= ~(effects[i]->get_value(this));
-		temp.attribute = attribute;
-	}
-	effects.clear();
-	filter_effect(EFFECT_CHANGE_ATTRIBUTE, &effects);
-	for (int32 i = 0; i < effects.size(); ++i) {
-		attribute = effects[i]->get_value(this);
+		else if (effects[i]->code == EFFECT_CHANGE_ATTRIBUTE)
+			attribute = effects[i]->get_value(this);
 		temp.attribute = attribute;
 	}
 	temp.attribute = UINT32_MAX;
@@ -1243,21 +1240,18 @@ uint32 card::get_race() {
 	if(temp.race != UINT32_MAX) // prevent recursion, return the former value
 		return temp.race;
 	effect_set effects;
-	int32 race = data.race;
+	auto race = data.race;
 	temp.race = data.race;
 	filter_effect(EFFECT_ADD_RACE, &effects, FALSE);
-	filter_effect(EFFECT_REMOVE_RACE, &effects);
+	filter_effect(EFFECT_REMOVE_RACE, &effects, FALSE);
+	filter_effect(EFFECT_CHANGE_RACE, &effects);
 	for (int32 i = 0; i < effects.size(); ++i) {
 		if (effects[i]->code == EFFECT_ADD_RACE)
 			race |= effects[i]->get_value(this);
-		else
+		else if (effects[i]->code == EFFECT_REMOVE_RACE)
 			race &= ~(effects[i]->get_value(this));
-		temp.race = race;
-	}
-	effects.clear();
-	filter_effect(EFFECT_CHANGE_RACE, &effects);
-	for (int32 i = 0; i < effects.size(); ++i) {
-		race = effects[i]->get_value(this);
+		else if (effects[i]->code == EFFECT_CHANGE_RACE)
+			race = effects[i]->get_value(this);
 		temp.race = race;
 	}
 	temp.race = UINT32_MAX;
@@ -1684,12 +1678,11 @@ int32 card::get_old_union_count() {
 	return count;
 }
 void card::xyz_overlay(card_set* materials) {
-	if(materials->size() == 0)
+	if(materials->empty())
 		return;
 	card_set des, leave_grave, leave_deck;
 	card_vector cv;
-	for(auto& pcard : *materials)
-		cv.push_back(pcard);
+	cv.assign(materials->begin(), materials->end());
 	std::sort(cv.begin(), cv.end(), card::card_operation_sort);
 	if(pduel->game_field->core.global_flag & GLOBALFLAG_DECK_REVERSE_CHECK) {
 		int32 d0 = (int32)pduel->game_field->player[0].list_main.size() - 1, s0 = d0;
@@ -1736,9 +1729,9 @@ void card::xyz_overlay(card_set* materials) {
 			pduel->game_field->remove_unique_card(pcard);
 		if(pcard->equiping_target)
 			pcard->unequip();
+		des.insert(pcard->equiping_cards.begin(), pcard->equiping_cards.end());
 		for(auto cit = pcard->equiping_cards.begin(); cit != pcard->equiping_cards.end();) {
 			card* equipc = *cit++;
-			des.insert(equipc);
 			equipc->unequip();
 		}
 		pcard->clear_card_target();
@@ -1795,7 +1788,9 @@ void card::xyz_add(card* mat) {
 void card::xyz_remove(card* mat) {
 	if(mat->overlay_target != this)
 		return;
-	xyz_materials.erase(xyz_materials.begin() + mat->current.sequence);
+	if (std::find(xyz_materials.begin(), xyz_materials.end(), mat) == xyz_materials.end())
+		return;
+	xyz_materials.erase(std::remove(xyz_materials.begin(), xyz_materials.end(), mat), xyz_materials.end());
 	mat->previous.controler = mat->current.controler;
 	mat->previous.location = mat->current.location;
 	mat->previous.sequence = mat->current.sequence;
@@ -1828,9 +1823,7 @@ void card::cancel_field_effect() {
 	if (current.controler == PLAYER_NONE)
 		return;
 	for (auto& it : field_effect) {
-		if (it.second->in_range(this) || it.second->is_hand_trigger()) {
-			pduel->game_field->remove_effect(it.second);
-		}
+		pduel->game_field->remove_effect(it.second);
 	}
 	if(unique_code && (current.location & unique_location))
 		pduel->game_field->remove_unique_card(this);
@@ -1995,12 +1988,6 @@ int32 card::add_effect(effect* peffect) {
 		peffect->reset_count = pduel->game_field->core.copy_reset_count;
 	}
 	effect* reason_effect = pduel->game_field->core.reason_effect;
-	if(peffect->is_flag(EFFECT_FLAG_COPY_INHERIT) && reason_effect && reason_effect->copy_id) {
-		peffect->copy_id = reason_effect->copy_id;
-		peffect->reset_flag |= reason_effect->reset_flag;
-		if(peffect->reset_count > reason_effect->reset_count)
-			peffect->reset_count = reason_effect->reset_count;
-	}
 	indexer.emplace(peffect, eit);
 	peffect->handler = this;
 	if((peffect->type & EFFECT_TYPE_FIELD)) {
@@ -2043,13 +2030,11 @@ int32 card::add_effect(effect* peffect) {
 	}
 	return peffect->id;
 }
-void card::remove_effect(effect* peffect) {
-	auto it = indexer.find(peffect);
-	if (it == indexer.end())
-		return;
-	remove_effect(peffect, it->second);
-}
-void card::remove_effect(effect* peffect, effect_container::iterator it) {
+effect_indexer::iterator card::remove_effect(effect* peffect) {
+	auto index = indexer.find(peffect);
+	if (index == indexer.end())
+		return index;
+	auto& it = index->second;
 	card_set check_target = { this };
 	if (peffect->type & EFFECT_TYPE_SINGLE) {
 		single_effect.erase(it);
@@ -2077,8 +2062,6 @@ void card::remove_effect(effect* peffect, effect_container::iterator it) {
 			pduel->game_field->update_disable_check_list(peffect);
 		}
 		field_effect.erase(it);
-		if(peffect->in_range(this) || current.controler != PLAYER_NONE && peffect->is_hand_trigger())
-			pduel->game_field->remove_effect(peffect);
 	}
 	if ((current.controler != PLAYER_NONE) && !get_status(STATUS_DISABLED | STATUS_FORBIDDEN) && !check_target.empty()) {
 		if (peffect->is_disable_related()) {
@@ -2086,16 +2069,7 @@ void card::remove_effect(effect* peffect, effect_container::iterator it) {
 				pduel->game_field->add_to_disable_check_list(target);
 		}
 	}
-	if (peffect->is_flag(EFFECT_FLAG_INITIAL) && peffect->copy_id && is_status(STATUS_EFFECT_REPLACED)) {
-		set_status(STATUS_EFFECT_REPLACED, FALSE);
-		if (interpreter::is_load_script(data)) {
-			set_status(STATUS_INITIALIZING, TRUE);
-			pduel->lua->add_param(this, PARAM_TYPE_CARD);
-			pduel->lua->call_card_function(this, "initial_effect", 1, 0);
-			set_status(STATUS_INITIALIZING, FALSE);
-		}
-	}
-	indexer.erase(peffect);
+	auto ret = indexer.erase(index);
 	if(peffect->is_flag(EFFECT_FLAG_OATH))
 		pduel->game_field->effects.oath.erase(peffect);
 	if(peffect->reset_flag & RESET_PHASE)
@@ -2127,7 +2101,9 @@ void card::remove_effect(effect* peffect, effect_container::iterator it) {
 		unique_pos[0] = unique_pos[1] = 0;
 		unique_code = 0;
 	}
+	pduel->game_field->remove_effect(peffect);
 	pduel->game_field->core.reseted_effects.insert(peffect);
+	return ret;
 }
 int32 card::copy_effect(uint32 code, uint32 reset, int32 count) {
 	card_data cdata;
@@ -2172,12 +2148,12 @@ int32 card::replace_effect(uint32 code, uint32 reset, int32 count) {
 		return -1;
 	if(is_status(STATUS_EFFECT_REPLACED))
 		set_status(STATUS_EFFECT_REPLACED, FALSE);
-	for(auto i = indexer.begin(); i != indexer.end();) {
-		auto rm = i++;
-		effect* peffect = rm->first;
-		auto it = rm->second;
-		if (peffect->is_flag(EFFECT_FLAG_INITIAL | EFFECT_FLAG_COPY_INHERIT))
-			remove_effect(peffect, it);
+	for(auto it = indexer.begin(); it != indexer.end();) {
+		effect* const& peffect = it->first;
+		if (peffect->is_flag(EFFECT_FLAG_INITIAL))
+			it = remove_effect(peffect);
+		else
+			++it;
 	}
 	auto cr = pduel->game_field->core.copy_reset;
 	auto crc = pduel->game_field->core.copy_reset_count;
@@ -2277,17 +2253,34 @@ void card::reset(uint32 id, uint32 reset_type) {
 			}
 		}
 	}
-	for (auto i = indexer.begin(); i != indexer.end();) {
-		auto rm = i++;
-		effect* peffect = rm->first;
-		auto it = rm->second;
-		if (peffect->reset(id, reset_type))
-			remove_effect(peffect, it);
+	else if (reset_type == RESET_COPY) {
+		delete_card_target(TRUE);
+		effect_target_cards.clear();
+	}
+	bool reload = false;
+	for (auto it = indexer.begin(); it != indexer.end();) {
+		effect* const& peffect = it->first;
+		if (peffect->reset(id, reset_type)) {
+			if (is_status(STATUS_EFFECT_REPLACED) && peffect->is_flag(EFFECT_FLAG_INITIAL) && peffect->copy_id)
+				reload = true;
+			it = remove_effect(peffect);
+		}
+		else
+			++it;
+	}
+	if (reload) {
+		set_status(STATUS_EFFECT_REPLACED, FALSE);
+		if (interpreter::is_load_script(data)) {
+			set_status(STATUS_INITIALIZING, TRUE);
+			pduel->lua->add_param(this, PARAM_TYPE_CARD);
+			pduel->lua->call_card_function(this, "initial_effect", 1, 0);
+			set_status(STATUS_INITIALIZING, FALSE);
+		}
 	}
 }
 void card::reset_effect_count() {
 	for (auto& i : indexer) {
-		effect* peffect = i.first;
+		effect* const& peffect = i.first;
 		if (peffect->is_flag(EFFECT_FLAG_COUNT_LIMIT))
 			peffect->recharge();
 	}
@@ -2595,6 +2588,26 @@ void card::cancel_card_target(card* pcard) {
 		pduel->write_buffer32(pcard->get_info_location());
 	}
 }
+void card::delete_card_target(uint32 send_msg) {
+	for (auto& pcard : effect_target_cards) {
+		pcard->effect_target_owner.erase(this);
+		for (auto& it : target_effect) {
+			if (it.second->is_disable_related())
+				pduel->game_field->add_to_disable_check_list(pcard);
+		}
+		for (auto it = pcard->single_effect.begin(); it != pcard->single_effect.end();) {
+			auto rm = it++;
+			effect* const& peffect = rm->second;
+			if ((peffect->owner == this) && peffect->is_flag(EFFECT_FLAG_OWNER_RELATE))
+				pcard->remove_effect(peffect);
+		}
+		if (send_msg) {
+			pduel->write_buffer8(MSG_CANCEL_TARGET);
+			pduel->write_buffer32(get_info_location());
+			pduel->write_buffer32(pcard->get_info_location());
+		}
+	}
+}
 void card::clear_card_target() {
 	for(auto& pcard : effect_target_owner) {
 		pcard->effect_target_cards.erase(this);
@@ -2603,19 +2616,7 @@ void card::clear_card_target() {
 				pduel->game_field->add_to_disable_check_list(this);
 		}
 	}
-	for(auto& pcard : effect_target_cards) {
-		pcard->effect_target_owner.erase(this);
-		for(auto& it : target_effect) {
-			if(it.second->is_disable_related())
-				pduel->game_field->add_to_disable_check_list(pcard);
-		}
-		for(auto it = pcard->single_effect.begin(); it != pcard->single_effect.end();) {
-			auto rm = it++;
-			effect* peffect = rm->second;
-			if((peffect->owner == this) && peffect->is_flag(EFFECT_FLAG_OWNER_RELATE))
-				pcard->remove_effect(peffect, rm);
-		}
-	}
+	delete_card_target(FALSE);
 	effect_target_owner.clear();
 	effect_target_cards.clear();
 }
@@ -2638,7 +2639,7 @@ void card::set_special_summon_status(effect* peffect) {
 	}
 	card* pcard = peffect->get_handler();
 	auto cait = pduel->game_field->core.current_chain.rbegin();
-	if(!(peffect->type & 0x7f0) || (pcard->is_has_relation(*cait) && !(pcard->get_type() & TYPE_TRAPMONSTER))) {
+	if(!(peffect->type & EFFECT_TYPES_CHAIN_LINK) || (pcard->is_has_relation(*cait) && !(pcard->get_type() & TYPE_TRAPMONSTER))) {
 		spsummon.code = pcard->get_code();
 		spsummon.code2 = pcard->get_another_code();
 		spsummon.type = pcard->get_type();
@@ -2820,7 +2821,7 @@ void card::filter_immune_effect() {
 // 4. Insert continuous target of this into it.
 void card::filter_disable_related_cards() {
 	for (auto& it : indexer) {
-		effect* peffect = it.first;
+		effect* const& peffect = it.first;
 		if (peffect->is_disable_related()) {
 			if (peffect->type & EFFECT_TYPE_FIELD)
 				pduel->game_field->update_disable_check_list(peffect);
@@ -2838,8 +2839,8 @@ void card::filter_disable_related_cards() {
 // return value:
 // -2 = this has a EFFECT_LIMIT_SUMMON_PROC, 0 available
 // -1 = this has a EFFECT_LIMIT_SUMMON_PROC, at least 1 available
-// 0 = no EFFECT_LIMIT_SUMMON_PROC, and ordinary summon ia not available
-// 1 = no EFFECT_LIMIT_SUMMON_PROC, and ordinary summon ia available
+// 0 = no EFFECT_LIMIT_SUMMON_PROC, and ordinary summon is not available
+// 1 = no EFFECT_LIMIT_SUMMON_PROC, and ordinary summon is available
 int32 card::filter_summon_procedure(uint8 playerid, effect_set* peset, uint8 ignore_count, uint8 min_tribute, uint32 zone) {
 	effect_set eset;
 	filter_effect(EFFECT_LIMIT_SUMMON_PROC, &eset);
@@ -3059,33 +3060,32 @@ void card::filter_spsummon_procedure_g(uint8 playerid, effect_set* peset) {
 }
 // find an effect with code which affects this
 effect* card::is_affected_by_effect(int32 code) {
-	effect* peffect = nullptr;
 	auto rg = single_effect.equal_range(code);
-	for (; rg.first != rg.second; ++rg.first) {
-		peffect = rg.first->second;
+	for (auto it = rg.first; it != rg.second; ++it) {
+		effect* const& peffect = it->second;
 		if (peffect->is_available() && (!peffect->is_flag(EFFECT_FLAG_SINGLE_RANGE) || is_affect_by_effect(peffect)))
 			return peffect;
 	}
 	for (auto& pcard : equiping_cards) {
 		rg = pcard->equip_effect.equal_range(code);
-		for (; rg.first != rg.second; ++rg.first) {
-			peffect = rg.first->second;
+		for (auto it = rg.first; it != rg.second; ++it) {
+			effect* const& peffect = it->second;
 			if (peffect->is_available() && is_affect_by_effect(peffect))
 				return peffect;
 		}
 	}
 	for (auto& pcard : effect_target_owner) {
 		rg = pcard->target_effect.equal_range(code);
-		for (; rg.first != rg.second; ++rg.first) {
-			peffect = rg.first->second;
+		for (auto it = rg.first; it != rg.second; ++it) {
+			effect* const& peffect = it->second;
 			if (peffect->is_available() && peffect->is_target(this) && is_affect_by_effect(peffect))
 				return peffect;
 		}
 	}
 	for (auto& pcard : xyz_materials) {
 		rg = pcard->xmaterial_effect.equal_range(code);
-		for (; rg.first != rg.second; ++rg.first) {
-			peffect = rg.first->second;
+		for (auto it = rg.first; it != rg.second; ++it) {
+			effect* const& peffect = it->second;
 			if (peffect->type & EFFECT_TYPE_FIELD)
 				continue;
 			if (peffect->is_available() && is_affect_by_effect(peffect))
@@ -3093,8 +3093,8 @@ effect* card::is_affected_by_effect(int32 code) {
 		}
 	}
 	rg = pduel->game_field->effects.aura_effect.equal_range(code);
-	for (; rg.first != rg.second; ++rg.first) {
-		peffect = rg.first->second;
+	for (auto it = rg.first; it != rg.second; ++it) {
+		effect* const& peffect = it->second;
 		if (!peffect->is_flag(EFFECT_FLAG_PLAYER_TARGET) && peffect->is_target(this)
 			&& peffect->is_available() && is_affect_by_effect(peffect))
 			return peffect;
@@ -3102,34 +3102,33 @@ effect* card::is_affected_by_effect(int32 code) {
 	return nullptr;
 }
 effect* card::is_affected_by_effect(int32 code, card* target) {
-	effect* peffect = nullptr;
 	auto rg = single_effect.equal_range(code);
-	for (; rg.first != rg.second; ++rg.first) {
-		peffect = rg.first->second;
+	for (auto it = rg.first; it != rg.second; ++it) {
+		effect* const& peffect = it->second;
 		if (peffect->is_available() && (!peffect->is_flag(EFFECT_FLAG_SINGLE_RANGE) || is_affect_by_effect(peffect))
-		        && peffect->get_value(target))
+			&& peffect->get_value(target))
 			return peffect;
 	}
 	for (auto& pcard : equiping_cards) {
 		rg = pcard->equip_effect.equal_range(code);
-		for (; rg.first != rg.second; ++rg.first) {
-			peffect = rg.first->second;
+		for (auto it = rg.first; it != rg.second; ++it) {
+			effect* const& peffect = it->second;
 			if (peffect->is_available() && is_affect_by_effect(peffect) && peffect->get_value(target))
 				return peffect;
 		}
 	}
 	for (auto& pcard : effect_target_owner) {
 		rg = pcard->target_effect.equal_range(code);
-		for (; rg.first != rg.second; ++rg.first) {
-			peffect = rg.first->second;
+		for (auto it = rg.first; it != rg.second; ++it) {
+			effect* const& peffect = it->second;
 			if (peffect->is_available() && peffect->is_target(this) && is_affect_by_effect(peffect) && peffect->get_value(target))
 				return peffect;
 		}
 	}
 	for (auto& pcard : xyz_materials) {
 		rg = pcard->xmaterial_effect.equal_range(code);
-		for (; rg.first != rg.second; ++rg.first) {
-			peffect = rg.first->second;
+		for (auto it = rg.first; it != rg.second; ++it) {
+			effect* const& peffect = it->second;
 			if (peffect->type & EFFECT_TYPE_FIELD)
 				continue;
 			if (peffect->is_available() && is_affect_by_effect(peffect) && peffect->get_value(target))
@@ -3137,10 +3136,10 @@ effect* card::is_affected_by_effect(int32 code, card* target) {
 		}
 	}
 	rg = pduel->game_field->effects.aura_effect.equal_range(code);
-	for (; rg.first != rg.second; ++rg.first) {
-		peffect = rg.first->second;
+	for (auto it = rg.first; it != rg.second; ++it) {
+		effect* const& peffect = it->second;
 		if (!peffect->is_flag(EFFECT_FLAG_PLAYER_TARGET) && peffect->is_available()
-		        && peffect->is_target(this) && is_affect_by_effect(peffect) && peffect->get_value(target))
+			&& peffect->is_target(this) && is_affect_by_effect(peffect) && peffect->get_value(target))
 			return peffect;
 	}
 	return nullptr;
@@ -3786,8 +3785,8 @@ int32 card::is_setable_szone(uint8 playerid, uint8 ignore_fd, uint8 toplayer, ui
 	return TRUE;
 }
 int32 card::is_affect_by_effect(effect* reason_effect) {
-	if(is_status(STATUS_SUMMONING) && reason_effect->code != EFFECT_CANNOT_DISABLE_SUMMON && reason_effect->code != EFFECT_CANNOT_DISABLE_SPSUMMON)
-		return FALSE;
+	if (is_status(STATUS_SUMMONING))
+		return reason_effect && (reason_effect->code == EFFECT_CANNOT_DISABLE_SUMMON || reason_effect->code == EFFECT_CANNOT_DISABLE_SPSUMMON);
 	if(!reason_effect || reason_effect->is_flag(EFFECT_FLAG_IGNORE_IMMUNE))
 		return TRUE;
 	if(reason_effect->is_immuned(this))

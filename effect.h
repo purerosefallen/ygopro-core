@@ -36,7 +36,7 @@ public:
 	uint32 code{ 0 };
 	uint32 flag[2]{};
 	uint32 id{ 0 };
-	uint16 type{ 0 };
+	uint32 type{ 0 };
 	uint16 copy_id{ 0 };
 	uint16 range{ 0 };
 	uint16 s_range{ 0 };
@@ -63,13 +63,14 @@ public:
 	int32 operation{ 0 };
 	uint8 cost_checked{ FALSE };
 	effect_set required_handorset_effects;
+	LuaParamType object_type{ PARAM_TYPE_INT };
 
 	explicit effect(duel* pd);
 	~effect() = default;
 
-	int32 is_disable_related();
-	int32 is_self_destroy_related();
-	int32 is_can_be_forbidden();
+	int32 is_disable_related() const;
+	int32 is_self_destroy_related() const;
+	int32 is_can_be_forbidden() const;
 	int32 is_available(int32 neglect_disabled = FALSE);
 	int32 limit_counter_is_available();
 	int32 is_single_ready();
@@ -87,7 +88,8 @@ public:
 	int32 is_player_effect_target(card* pcard);
 	int32 is_immuned(card* pcard);
 	int32 is_chainable(uint8 tp);
-	int32 is_hand_trigger();
+	int32 is_hand_trigger() const;
+	int32 is_initial_single() const;
 	int32 reset(uint32 reset_level, uint32 reset_type);
 	void dec_count(uint8 playerid = PLAYER_NONE);
 	void recharge();
@@ -103,11 +105,11 @@ public:
 	int32 get_speed();
 	effect* clone();
 	card* get_owner() const;
-	uint8 get_owner_player();
+	uint8 get_owner_player() const;
 	card* get_handler() const;
-	uint8 get_handler_player();
-	int32 in_range(card* pcard);
-	int32 in_range(const chain& ch);
+	uint8 get_handler_player() const;
+	int32 in_range(card* pcard) const;
+	int32 in_range(const chain& ch) const;
 	void set_activate_location();
 	void set_active_type();
 	uint32 get_active_type(uint8 uselast = TRUE);
@@ -188,7 +190,8 @@ public:
 #define EFFECT_TYPE_GRANT			0x2000	//
 #define EFFECT_TYPE_TARGET			0x4000	//
 
-#define EFFECT_TYPES_TRIGGER_LIKE	(EFFECT_TYPE_ACTIVATE | EFFECT_TYPE_TRIGGER_O | EFFECT_TYPE_TRIGGER_F | EFFECT_TYPE_QUICK_O | EFFECT_TYPE_QUICK_F)
+constexpr uint32 EFFECT_TYPES_TRIGGER_LIKE = EFFECT_TYPE_ACTIVATE | EFFECT_TYPE_TRIGGER_O | EFFECT_TYPE_TRIGGER_F | EFFECT_TYPE_QUICK_O | EFFECT_TYPE_QUICK_F;
+constexpr uint32 EFFECT_TYPES_CHAIN_LINK = EFFECT_TYPES_TRIGGER_LIKE | EFFECT_TYPE_FLIP | EFFECT_TYPE_IGNITION;
 
 //========== Flags ==========
 enum effect_flag : uint32 {
@@ -205,7 +208,7 @@ enum effect_flag : uint32 {
 	EFFECT_FLAG_CANNOT_DISABLE		= 0x0400,
 	EFFECT_FLAG_PLAYER_TARGET		= 0x0800,
 	EFFECT_FLAG_BOTH_SIDE			= 0x1000,
-	EFFECT_FLAG_COPY_INHERIT		= 0x2000,
+//	EFFECT_FLAG_COPY_INHERIT		= 0x2000,
 	EFFECT_FLAG_DAMAGE_STEP			= 0x4000,
 	EFFECT_FLAG_DAMAGE_CAL			= 0x8000,
 	EFFECT_FLAG_DELAY				= 0x10000,

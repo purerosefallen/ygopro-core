@@ -33,6 +33,8 @@ class duel;
 class group;
 class effect;
 
+using effect_vector = std::vector<effect*>;
+
 bool check_playerid(int32 playerid);
 
 struct tevent {
@@ -100,10 +102,7 @@ struct player_info {
 	card_vector tag_list_extra;
 };
 struct field_effect {
-	using effect_container = std::multimap<uint32, effect*>;
-	using effect_indexer = std::unordered_map<effect*, effect_container::iterator>;
 	using oath_effects = std::unordered_map<effect*, effect*>;
-	using effect_collection = std::unordered_set<effect*>;
 	using gain_effects = std::unordered_map<card*, effect*>;
 	using grant_effect_container = std::unordered_map<effect*, gain_effects>;
 
@@ -171,7 +170,6 @@ union return_value {
 	int64 lvalue[SIZE_LVALUE];
 };
 struct processor {
-	using effect_vector = std::vector<effect*>;
 	using option_vector = std::vector<uint32>;
 	using card_list = std::list<card*>;
 	using event_list = std::list<tevent>;
@@ -361,11 +359,10 @@ struct processor {
 	std::unordered_map<uint32, std::pair<uint32, uint32>> chain_counter;
 	processor_list recover_damage_reserve;
 	effect_vector dec_count_reserve;
+	uint8 announce_card_silent{ FALSE };
 };
 class field {
 public:
-	using effect_container = std::multimap<uint32, effect*>;
-	using effect_vector = std::vector<effect*>;
 	using card_list = std::list<card*>;
 	using event_list = std::list<tevent>;
 	using chain_list = std::list<chain>;
@@ -422,7 +419,7 @@ public:
 	void refresh_player_info(uint8 playerid);
 	void tag_swap(uint8 playerid);
 
-	void add_effect(effect* peffect, uint8 owner_player = 2);
+	void add_effect(effect* peffect, uint8 owner_player = PLAYER_NONE);
 	void remove_effect(effect* peffect);
 	void remove_oath_effect(effect* reason_effect);
 	void release_oath_relation(effect* reason_effect);

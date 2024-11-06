@@ -1028,10 +1028,14 @@ int32 field::announce_card(int16 step, uint8 playerid) {
 				return FALSE;
 			}
 		}
-		pduel->write_buffer8(MSG_HINT);
-		pduel->write_buffer8(HINT_CODE);
-		pduel->write_buffer8(playerid);
-		pduel->write_buffer32(code);
+		if(!core.announce_card_silent) {
+			pduel->write_buffer8(MSG_HINT);
+			pduel->write_buffer8(HINT_CODE);
+			pduel->write_buffer8(playerid);
+			pduel->write_buffer32(code);
+		} else {
+			core.announce_card_silent = FALSE;
+		}
 		return TRUE;
 	}
 	return TRUE;
