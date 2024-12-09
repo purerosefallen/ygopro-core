@@ -17,6 +17,14 @@ constexpr bool match_all(uint32 x, uint32 y) {
 
 class scriptlib {
 public:
+	enum effect_member : int32 {
+		MEMBER_CATEGORY,
+		MEMBER_CODE,
+		MEMBER_DESCRIPTION,
+		MEMBER_ID,
+		MEMBER_RANGE,
+		MEMBER_TYPE,
+	};
 	static int32 check_param(lua_State* L, int32 param_type, int32 index, int32 retfalse = FALSE);
 	static int32 check_param_count(lua_State* L, int32 count);
 	static int32 check_action_permission(lua_State* L);
@@ -29,7 +37,6 @@ public:
 	static int32 card_is_xyz_summonable_by_rose(lua_State *L);
 	static int32 card_get_removed_overlay_count(lua_State *L);
 	static int32 effect_set_owner(lua_State *L);
-	static int32 effect_get_range(lua_State *L);
 	static int32 effect_get_count_limit(lua_State *L);
 	static int32 duel_get_master_rule(lua_State *L);
 	static int32 duel_read_card(lua_State *L);
@@ -165,6 +172,8 @@ public:
 	static int32 card_is_status(lua_State *L);
 	static int32 card_is_not_tuner(lua_State *L);
 	static int32 card_is_tuner(lua_State* L);
+	static int32 card_is_original_effect_property(lua_State* L);
+	static int32 card_is_effect_property(lua_State* L);
 	static int32 card_set_status(lua_State *L);
 	static int32 card_is_dual_state(lua_State *L);
 	static int32 card_enable_dual_state(lua_State *L);
@@ -323,6 +332,8 @@ public:
 	static void open_cardlib(lua_State *L);
 
 	//Effect functions
+	static int32 get_effect_property(lua_State* L, effect_member type);
+	static int32 is_effect_has_property(lua_State* L, effect_member type);
 	static int32 effect_new(lua_State *L);
 	static int32 effect_newex(lua_State *L);
 	static int32 effect_clone(lua_State *L);
@@ -354,6 +365,7 @@ public:
 	static int32 effect_get_label(lua_State *L);
 	static int32 effect_get_label_object(lua_State *L);
 	static int32 effect_get_category(lua_State *L);
+	static int32 effect_get_range(lua_State* L);
 	static int32 effect_get_owner(lua_State *L);
 	static int32 effect_get_handler(lua_State *L);
 	static int32 effect_get_owner_player(lua_State *L);
@@ -367,6 +379,7 @@ public:
 	static int32 effect_is_active_type(lua_State *L);
 	static int32 effect_is_has_property(lua_State *L);
 	static int32 effect_is_has_category(lua_State *L);
+	static int32 effect_is_has_range(lua_State* L);
 	static int32 effect_is_has_type(lua_State *L);
 	static int32 effect_is_activatable(lua_State *L);
 	static int32 effect_is_activated(lua_State *L);

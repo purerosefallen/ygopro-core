@@ -16,8 +16,6 @@
 #include <set>
 #include <map>
 #include <list>
-#include <array>
-#include <functional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -128,10 +126,10 @@ struct field_effect {
 };
 struct field_info {
 	int32 field_id{ 1 };
-	int16 copy_id{ 1 };
-	int16 turn_id{};
-	int16 turn_id_by_player[2]{};
-	int16 card_id{ 1 };
+	uint16 copy_id{ 1 };
+	uint16 turn_id{};
+	uint16 turn_id_by_player[2]{};
+	uint16 card_id{ 1 };
 	uint16 phase{};
 	uint8 turn_player{};
 	uint8 priorities[2]{};
@@ -393,7 +391,9 @@ public:
 	void swap_card(card* pcard1, card* pcard2, uint8 new_sequence1, uint8 new_sequence2);
 	void swap_card(card* pcard1, card* pcard2);
 	void set_control(card* pcard, uint8 playerid, uint16 reset_phase, uint8 reset_count);
-	card* get_field_card(uint8 playerid, uint32 general_location, uint8 sequence);
+
+	int32 get_pzone_sequence(uint8 pseq) const;
+	card* get_field_card(uint8 playerid, uint32 general_location, uint8 sequence) const;
 	int32 is_location_useable(uint8 playerid, uint32 general_location, uint8 sequence) const;
 	int32 get_useable_count(card* pcard, uint8 playerid, uint8 location, uint8 uplayer, uint32 reason, uint32 zone = 0xff, uint32* list = nullptr);
 	int32 get_useable_count_fromex(card* pcard, uint8 playerid, uint8 uplayer, uint32 zone = 0xff, uint32* list = nullptr);
@@ -444,7 +444,7 @@ public:
 	int32 get_draw_count(uint8 playerid);
 	void get_ritual_material(uint8 playerid, effect* peffect, card_set* material, uint8 no_level = FALSE);
 	void get_fusion_material(uint8 playerid, card_set* material_all, card_set* material_base, uint32 location);
-	void ritual_release(card_set* material);
+	void ritual_release(const card_set& material);
 	void get_xyz_material(lua_State* L, card* scard, int32 findex, uint32 lv, int32 maxc, group* mg);
 	void get_overlay_group(uint8 self, uint8 s, uint8 o, card_set* pset);
 	int32 get_overlay_count(uint8 self, uint8 s, uint8 o);
@@ -530,7 +530,7 @@ public:
 	int32 execute_operation(uint16 step, effect* peffect, uint8 triggering_player);
 	int32 execute_target(uint16 step, effect* peffect, uint8 triggering_player);
 	void raise_event(card* event_card, uint32 event_code, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 event_player, uint32 event_value);
-	void raise_event(card_set* event_cards, uint32 event_code, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 event_player, uint32 event_value);
+	void raise_event(const card_set& event_cards, uint32 event_code, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 event_player, uint32 event_value);
 	void raise_single_event(card* trigger_card, card_set* event_cards, uint32 event_code, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 event_player, uint32 event_value);
 	int32 check_event(uint32 code, tevent* pe = nullptr);
 	int32 check_event_c(effect* peffect, uint8 playerid, int32 neglect_con, int32 neglect_cost, int32 copy_info, tevent* pe = nullptr);
@@ -567,9 +567,9 @@ public:
 	void change_target_param(uint8 chaincount, int32 param);
 	void remove_counter(uint32 reason, card* pcard, uint32 rplayer, uint32 s, uint32 o, uint32 countertype, uint32 count);
 	void remove_overlay_card(uint32 reason, card* pcard, uint32 rplayer, uint32 s, uint32 o, uint16 min, uint16 max);
-	void get_control(card_set* targets, effect* reason_effect, uint32 reason_player, uint32 playerid, uint32 reset_phase, uint32 reset_count, uint32 zone);
+	void get_control(const card_set& targets, effect* reason_effect, uint32 reason_player, uint32 playerid, uint32 reset_phase, uint32 reset_count, uint32 zone);
 	void get_control(card* target, effect* reason_effect, uint32 reason_player, uint32 playerid, uint32 reset_phase, uint32 reset_count, uint32 zone);
-	void swap_control(effect* reason_effect, uint32 reason_player, card_set* targets1, card_set* targets2, uint32 reset_phase, uint32 reset_count);
+	void swap_control(effect* reason_effect, uint32 reason_player, const card_set& targets1, const card_set& targets2, uint32 reset_phase, uint32 reset_count);
 	void swap_control(effect* reason_effect, uint32 reason_player, card* pcard1, card* pcard2, uint32 reset_phase, uint32 reset_count);
 	void equip(uint32 equip_player, card* equip_card, card* target, uint32 up, uint32 is_step);
 	void draw(effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, int32 count);
@@ -578,17 +578,17 @@ public:
 	void summon(uint32 sumplayer, card* target, effect* proc, uint32 ignore_count, uint32 min_tribute, uint32 zone = 0x1f, uint32 action_type = SUMMON_IN_IDLE);
 	void mset(uint32 setplayer, card* target, effect* proc, uint32 ignore_count, uint32 min_tribute, uint32 zone = 0x1f, uint32 action_type = SUMMON_IN_IDLE);
 	void special_summon_rule(uint32 sumplayer, card* target, uint32 summon_type, uint32 action_type = SUMMON_IN_IDLE);
-	void special_summon(card_set* target, uint32 sumtype, uint32 sumplayer, uint32 playerid, uint32 nocheck, uint32 nolimit, uint32 positions, uint32 zone);
+	void special_summon(const card_set& target, uint32 sumtype, uint32 sumplayer, uint32 playerid, uint32 nocheck, uint32 nolimit, uint32 positions, uint32 zone);
 	void special_summon_step(card* target, uint32 sumtype, uint32 sumplayer, uint32 playerid, uint32 nocheck, uint32 nolimit, uint32 positions, uint32 zone);
 	void special_summon_complete(effect* reason_effect, uint8 reason_player);
-	void destroy(card_set* targets, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid = 2, uint32 destination = 0, uint32 sequence = 0);
+	void destroy(card_set& targets, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid = 2, uint32 destination = 0, uint32 sequence = 0);
 	void destroy(card* target, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid = 2, uint32 destination = 0, uint32 sequence = 0);
-	void release(card_set* targets, effect* reason_effect, uint32 reason, uint32 reason_player);
+	void release(const card_set& targets, effect* reason_effect, uint32 reason, uint32 reason_player);
 	void release(card* target, effect* reason_effect, uint32 reason, uint32 reason_player);
-	void send_to(card_set* targets, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, uint32 destination, uint32 sequence, uint32 position, uint8 send_activating = FALSE);
+	void send_to(const card_set& targets, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, uint32 destination, uint32 sequence, uint32 position, uint8 send_activating = FALSE);
 	void send_to(card* target, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, uint32 destination, uint32 sequence, uint32 position, uint8 send_activating = FALSE);
 	void move_to_field(card* target, uint32 move_player, uint32 playerid, uint32 destination, uint32 positions, uint32 enable = FALSE, uint32 ret = 0, uint32 pzone = FALSE, uint32 zone = 0xff);
-	void change_position(card_set* targets, effect* reason_effect, uint32 reason_player, uint32 au, uint32 ad, uint32 du, uint32 dd, uint32 flag, uint32 enable = FALSE);
+	void change_position(const card_set& targets, effect* reason_effect, uint32 reason_player, uint32 au, uint32 ad, uint32 du, uint32 dd, uint32 flag, uint32 enable = FALSE);
 	void change_position(card* target, effect* reason_effect, uint32 reason_player, uint32 npos, uint32 flag, uint32 enable = FALSE);
 	void operation_replace(int32 type, int32 step, group* targets);
 	void select_tribute_cards(card* target, uint8 playerid, uint8 cancelable, int32 min, int32 max, uint8 toplayer, uint32 zone);
@@ -632,7 +632,7 @@ public:
 	int32 toss_dice(uint16 step, effect* reason_effect, uint8 reason_player, uint8 playerid, uint8 count1, uint8 count2);
 	int32 rock_paper_scissors(uint16 step, uint8 repeat);
 
-	bool check_response(int32 vector_size, int32 min_len, int32 max_len) const;
+	bool check_response(size_t vector_size, int32 min_len, int32 max_len) const;
 	int32 select_battle_command(uint16 step, uint8 playerid);
 	int32 select_idle_command(uint16 step, uint8 playerid);
 	int32 select_effect_yes_no(uint16 step, uint8 playerid, uint32 description, card* pcard);
