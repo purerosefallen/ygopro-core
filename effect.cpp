@@ -625,6 +625,11 @@ int32 effect::is_hand_trigger() const {
 int32 effect::is_initial_single() const {
 	return (type & EFFECT_TYPE_SINGLE) && is_flag(EFFECT_FLAG_SINGLE_RANGE) && is_flag(EFFECT_FLAG_INITIAL);
 }
+int32 effect::is_monster_effect() const {
+	if (range & (LOCATION_SZONE | LOCATION_FZONE | LOCATION_PZONE))
+		return FALSE;
+	return TRUE;
+}
 //return: this can be reset by reset_level or not
 //RESET_DISABLE is valid only when owner == handler
 int32 effect::reset(uint32 reset_level, uint32 reset_type) {
@@ -695,7 +700,7 @@ int32 effect::get_value(uint32 extraargs) {
 		return res;
 	} else {
 		pduel->lua->params.clear();
-		return (int32)value;
+		return value;
 	}
 }
 int32 effect::get_value(card* pcard, uint32 extraargs) {
@@ -706,7 +711,7 @@ int32 effect::get_value(card* pcard, uint32 extraargs) {
 		return res;
 	} else {
 		pduel->lua->params.clear();
-		return (int32)value;
+		return value;
 	}
 }
 int32 effect::get_value(effect* peffect, uint32 extraargs) {
@@ -717,36 +722,36 @@ int32 effect::get_value(effect* peffect, uint32 extraargs) {
 		return res;
 	} else {
 		pduel->lua->params.clear();
-		return (int32)value;
+		return value;
 	}
 }
-void effect::get_value(uint32 extraargs, std::vector<int32>* result) {
+void effect::get_value(uint32 extraargs, std::vector<lua_Integer>& result) {
 	if(is_flag(EFFECT_FLAG_FUNC_VALUE)) {
 		pduel->lua->add_param(this, PARAM_TYPE_EFFECT, TRUE);
 		pduel->lua->get_function_value(value, 1 + extraargs, result);
 	} else {
 		pduel->lua->params.clear();
-		result->push_back((int32)value);
+		result.push_back(value);
 	}
 }
-void effect::get_value(card* pcard, uint32 extraargs, std::vector<int32>* result) {
+void effect::get_value(card* pcard, uint32 extraargs, std::vector<lua_Integer>& result) {
 	if(is_flag(EFFECT_FLAG_FUNC_VALUE)) {
 		pduel->lua->add_param(pcard, PARAM_TYPE_CARD, TRUE);
 		pduel->lua->add_param(this, PARAM_TYPE_EFFECT, TRUE);
 		pduel->lua->get_function_value(value, 2 + extraargs, result);
 	} else {
 		pduel->lua->params.clear();
-		result->push_back((int32)value);
+		result.push_back(value);
 	}
 }
-void effect::get_value(effect* peffect, uint32 extraargs, std::vector<int32>* result) {
+void effect::get_value(effect* peffect, uint32 extraargs, std::vector<lua_Integer>& result) {
 	if(is_flag(EFFECT_FLAG_FUNC_VALUE)) {
 		pduel->lua->add_param(peffect, PARAM_TYPE_EFFECT, TRUE);
 		pduel->lua->add_param(this, PARAM_TYPE_EFFECT, TRUE);
 		pduel->lua->get_function_value(value, 2 + extraargs, result);
 	} else {
 		pduel->lua->params.clear();
-		result->push_back((int32)value);
+		result.push_back(value);
 	}
 }
 int32 effect::get_integer_value() {
@@ -759,7 +764,7 @@ int32 effect::check_value_condition(uint32 extraargs) {
 		return res;
 	} else {
 		pduel->lua->params.clear();
-		return (int32)value;
+		return value;
 	}
 }
 void* effect::get_label_object() {
@@ -868,7 +873,7 @@ uint32 effect::get_active_type(uint8 uselast) {
 	} else
 		return owner->get_type();
 }
-int32 effect::get_code_type() const {
+code_type effect::get_code_type() const {
 	// start from the highest bit
 	if (code & 0xf0000000)
 		return CODE_CUSTOM;

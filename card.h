@@ -30,6 +30,9 @@ using effect_container = std::multimap<uint32, effect*>;
 using effect_indexer = std::unordered_map<effect*, effect_container::iterator>;
 using effect_collection = std::unordered_set<effect*>;
 
+using effect_filter = bool(*)(card* self, effect* peffect);
+using effect_filter_target = bool(*)(card* self, effect* peffect, card* target);
+
 struct card_state {
 	uint32 code{ 0 };
 	uint32 code2{ 0 };
@@ -56,7 +59,7 @@ struct card_state {
 	uint8 reason_player{ PLAYER_NONE };
 	effect* reason_effect{ nullptr };
 
-	bool is_location(int32 loc) const;
+	bool is_location(uint32 loc) const;
 	bool is_main_mzone() const {
 		return location == LOCATION_MZONE && sequence >= 0 && sequence <= 4;
 	}
@@ -106,12 +109,6 @@ struct material_info {
 };
 const material_info null_info;
 
-constexpr uint32 CARD_MARINE_DOLPHIN = 78734254;
-constexpr uint32 CARD_TWINKLE_MOSS = 13857930;
-constexpr uint32 CARD_TIMAEUS = 1784686;
-constexpr uint32 CARD_CRITIAS = 11082056;
-constexpr uint32 CARD_HERMOS = 46232525;
-
 class card {
 public:
 	struct effect_relation_hash {
@@ -153,7 +150,6 @@ public:
 		uint8 location{ 0 };
 		uint8 sequence{ 0 };
 	};
-	static const std::unordered_map<uint32, uint32> second_code;
 
 	int32 ref_handle;
 	duel* pduel;
@@ -218,12 +214,15 @@ public:
 	effect_indexer indexer;
 	effect_relation relate_effect;
 	effect_set_v immune_effect;
+	effect_collection initial_effect;
+	effect_collection owning_effect;
 
 	uint8 to_leave_fromex;
 
 	explicit card(duel* pd);
 	~card() = default;
 	static bool card_operation_sort(card* c1, card* c2);
+	static bool check_card_setcode(uint32 code, uint32 value);
 	bool is_extra_deck_monster() const { return !!(data.type & TYPES_EXTRA_DECK); }
 
 	int32 get_infos(byte* buf, uint32 query_flag, int32 use_cache = TRUE);
@@ -232,7 +231,6 @@ public:
 	std::tuple<uint32, uint32> get_original_code_rule() const;
 	uint32 get_code();
 	uint32 get_another_code();
-	static bool check_card_setcode(uint32 code, uint32 value);
 	int32 is_set_card(uint32 set_code);
 	int32 is_origin_set_card(uint32 set_code);
 	int32 is_pre_set_card(uint32 set_code);
@@ -268,14 +266,14 @@ public:
 	uint32 get_lscale();
 	uint32 get_rscale();
 	uint32 get_link_marker();
-	int32 is_link_marker(uint32 dir);
+	uint32 is_link_marker(uint32 dir);
 	uint32 get_linked_zone();
 	void get_linked_cards(card_set* cset);
 	uint32 get_mutual_linked_zone();
 	void get_mutual_linked_cards(card_set * cset);
 	int32 is_link_state();
 	int32 is_extra_link_state();
-	int32 is_position(int32 pos);
+	int32 is_position(uint32 pos) const;
 	void set_status(uint32 status, int32 enabled);
 	int32 get_status(uint32 status) const;
 	int32 is_status(uint32 status) const;
@@ -284,13 +282,13 @@ public:
 	int32 is_all_column();
 	uint8 get_select_sequence(uint8 *deck_seq_pointer);
 	uint32 get_select_info_location(uint8 *deck_seq_pointer);
-	int32 is_treated_as_not_on_field();
+	int32 is_treated_as_not_on_field() const;
 
 	void equip(card* target, uint32 send_msg = TRUE);
 	void unequip();
 	int32 get_union_count();
 	int32 get_old_union_count();
-	void xyz_overlay(card_set* materials);
+	void xyz_overlay(const card_set& materials);
 	void xyz_add(card* mat);
 	void xyz_remove(card* mat);
 	void apply_field_effect();
@@ -330,9 +328,12 @@ public:
 	void clear_card_target();
 	void set_special_summon_status(effect* peffect);
 
-	void filter_effect(int32 code, effect_set* eset, uint8 sort = TRUE);
-	void filter_single_continuous_effect(int32 code, effect_set* eset, uint8 sort = TRUE);
-	void filter_self_effect(int32 code, effect_set* eset, uint8 sort = TRUE);
+	template<typename T>
+	void filter_effect_container(const effect_container& container, uint32 code, effect_filter f, T& eset);
+	void filter_effect_container(const effect_container& container, uint32 code, effect_filter f, effect_collection& eset);
+	void filter_effect(uint32 code, effect_set* eset, uint8 sort = TRUE);
+	void filter_single_continuous_effect(uint32 code, effect_set* eset, uint8 sort = TRUE);
+	void filter_self_effect(uint32 code, effect_set* eset, uint8 sort = TRUE);
 	void filter_immune_effect();
 	void filter_disable_related_cards();
 	int32 filter_summon_procedure(uint8 playerid, effect_set* eset, uint8 ignore_count, uint8 min_tribute, uint32 zone);
@@ -341,7 +342,9 @@ public:
 	int32 check_set_procedure(effect* proc, uint8 playerid, uint8 ignore_count, uint8 min_tribute, uint32 zone);
 	void filter_spsummon_procedure(uint8 playerid, effect_set* eset, uint32 summon_type, material_info info = null_info);
 	void filter_spsummon_procedure_g(uint8 playerid, effect_set* eset);
-	effect* is_affected_by_effect(int32 code);
+	effect* find_effect(const effect_container& container, uint32 code, effect_filter f);
+	effect* find_effect_with_target(const effect_container& container, uint32 code, effect_filter_target f, card* target);
+	effect* is_affected_by_effect(uint32 code);
 	effect* is_affected_by_effect(int32 code, card* target);
 	int32 fusion_check(group* fusion_m, card* cg, uint32 chkf, uint8 not_material);
 	void fusion_select(uint8 playerid, group* fusion_m, card* cg, uint32 chkf, uint8 not_material);
@@ -406,6 +409,8 @@ public:
 	int32 is_can_be_link_material(card* scard);
 
 	int32 get_display_code();
+	int32 is_original_effect_property(int32 filter);
+	int32 is_effect_property(int32 filter);
 };
 
 //Summon Type in summon_info

@@ -14,14 +14,14 @@
 #include <algorithm>
 #include <stack>
 
-bool field::check_response(int32 vector_size, int32 min_len, int32 max_len) const {
+bool field::check_response(size_t vector_size, int32 min_len, int32 max_len) const {
 	const int32 len = returns.bvalue[0];
 	if (len < min_len || len > max_len)
 		return false;
 	std::set<uint8> index_set;
 	for (int32 i = 0; i < len; ++i) {
 		uint8 index = returns.bvalue[1 + i];
-		if (index >=vector_size  || index_set.count(index)) {
+		if (index >= (int32)vector_size  || index_set.count(index)) {
 			return false;
 		}
 		index_set.insert(index);
@@ -787,7 +787,7 @@ int32 field::sort_card(int16 step, uint8 playerid) {
 int32 field::announce_race(int16 step, uint8 playerid, int32 count, int32 available) {
 	if(step == 0) {
 		int32 scount = 0;
-		for(int32 ft = 0x1; ft < (1 << RACES_COUNT); ft <<= 1) {
+		for(uint32 ft = 0x1; ft < (0x1U << RACES_COUNT); ft <<= 1) {
 			if(ft & available)
 				++scount;
 		}
@@ -803,8 +803,9 @@ int32 field::announce_race(int16 step, uint8 playerid, int32 count, int32 availa
 	} else {
 		int32 rc = returns.ivalue[0];
 		int32 sel = 0;
-		for(int32 ft = 0x1; ft < (1 << RACES_COUNT); ft <<= 1) {
-			if(!(ft & rc)) continue;
+		for(uint32 ft = 0x1; ft < (0x1U << RACES_COUNT); ft <<= 1) {
+			if(!(ft & rc))
+				continue;
 			if(!(ft & available)) {
 				pduel->write_buffer8(MSG_RETRY);
 				return FALSE;
@@ -912,7 +913,7 @@ static int32 is_declarable(card_data const& cd, const std::vector<uint32>& opcod
 				stack.pop();
 				int32 lhs = stack.top();
 				stack.pop();
-				stack.push(lhs && rhs);
+				stack.push(static_cast<int32>(lhs && rhs));
 			}
 			break;
 		}
@@ -922,7 +923,7 @@ static int32 is_declarable(card_data const& cd, const std::vector<uint32>& opcod
 				stack.pop();
 				int32 lhs = stack.top();
 				stack.pop();
-				stack.push(lhs || rhs);
+				stack.push(static_cast<int32>(lhs || rhs));
 			}
 			break;
 		}
@@ -938,7 +939,7 @@ static int32 is_declarable(card_data const& cd, const std::vector<uint32>& opcod
 			if(stack.size() >= 1) {
 				int32 val = stack.top();
 				stack.pop();
-				stack.push(!val);
+				stack.push(static_cast<int32>(!val));
 			}
 			break;
 		}
