@@ -36,7 +36,7 @@ uint32 field::process() {
 	if (core.subunits.size())
 		core.units.splice(core.units.begin(), core.subunits);
 	if (core.units.size() == 0)
-		return PROCESSOR_END | pduel->message_buffer.size();
+		return PROCESSOR_END | pduel->buffer_size();
 	auto it = core.units.begin();
 	switch (it->type) {
 	case PROCESSOR_ADJUST: {
@@ -45,151 +45,151 @@ uint32 field::process() {
 		else {
 			++it->step;
 		}
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_TURN: {
 		if (process_turn(it->step, it->arg1))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_WAIT: {
 		core.units.pop_front();
-		return PROCESSOR_WAITING | pduel->message_buffer.size();
+		return PROCESSOR_WAITING | pduel->buffer_size();
 	}
 	case PROCESSOR_REFRESH_LOC: {
 		if (refresh_location_info(it->step))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SELECT_BATTLECMD: {
 		if (select_battle_command(it->step, it->arg1)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_IDLECMD: {
 		if (select_idle_command(it->step, it->arg1)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_EFFECTYN: {
 		if (select_effect_yes_no(it->step, it->arg1, it->arg2, (card*)it->ptarget)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_YESNO: {
 		if (select_yes_no(it->step, it->arg1, it->arg2)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_OPTION: {
 		if (select_option(it->step, it->arg1)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_CARD: {
 		if (select_card(it->step, it->arg1 & 0xff, (it->arg1 >> 16) & 0xff, (it->arg2) & 0xff, (it->arg2 >> 16) & 0xff)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_UNSELECT_CARD: {
 		if (select_unselect_card(it->step, it->arg1 & 0xff, (it->arg1 >> 16) & 0xff, (it->arg2) & 0xff, (it->arg2 >> 16) & 0xff, (it->arg3) & 0xff)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_CHAIN: {
 		if (select_chain(it->step, it->arg1, (it->arg2 & 0xffff), it->arg2 >> 16)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_DISFIELD:
 	case PROCESSOR_SELECT_PLACE: {
 		if (select_place(it->step, it->arg1, it->arg2, it->arg3)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_POSITION: {
 		if (select_position(it->step, it->arg1 & 0xffff, it->arg2, (it->arg1 >> 16) & 0xffff)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_TRIBUTE_P: {
 		if (select_tribute(it->step, it->arg1 & 0xff, (it->arg1 >> 16) & 0xff, (it->arg2) & 0xff, (it->arg2 >> 16) & 0xff)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_COUNTER: {
 		if (select_counter(it->step, it->arg1, it->arg2, it->arg3, it->arg4 >> 8, it->arg4 & 0xff)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_SUM: {
 		if (select_with_sum_limit(it->step, it->arg2, it->arg1, it->arg3, it->arg4)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SORT_CARD: {
 		if (sort_card(it->step, it->arg1)) {
 			core.units.pop_front();
-			return pduel->message_buffer.size();
+			return pduel->buffer_size();
 		} else {
 			it->step = 1;
-			return PROCESSOR_WAITING | pduel->message_buffer.size();
+			return PROCESSOR_WAITING | pduel->buffer_size();
 		}
 	}
 	case PROCESSOR_SELECT_RELEASE: {
@@ -197,77 +197,77 @@ uint32 field::process() {
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SELECT_TRIBUTE: {
 		if (select_tribute_cards(it->step, (card*)it->ptarget, it->arg1 & 0xff, (it->arg1 >> 16) & 0xff, (it->arg2) & 0xff, (it->arg2 >> 16) & 0xff, it->arg3, it->arg4))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_POINT_EVENT: {
 		if(process_point_event(it->step, it->arg1 & 0xff, (it->arg1 >> 8) & 0xff, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_QUICK_EFFECT: {
 		if(process_quick_effect(it->step, it->arg1, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_IDLE_COMMAND: {
 		if(process_idle_command(it->step))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_PHASE_EVENT: {
 		if(process_phase_event(it->step, it->arg1))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_BATTLE_COMMAND: {
 		if(process_battle_command(it->step))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_DAMAGE_STEP: {
 		if(process_damage_step(it->step, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_ADD_CHAIN: {
 		if (add_chain(it->step))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SOLVE_CHAIN: {
 		if (solve_chain(it->step, it->arg1, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SOLVE_CONTINUOUS: {
 		if (solve_continuous(it->step))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_EXECUTE_COST: {
 		if (execute_cost(it->step, it->peffect, it->arg1)) {
@@ -275,7 +275,7 @@ uint32 field::process() {
 			core.solving_event.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_EXECUTE_OPERATION: {
 		if (execute_operation(it->step, it->peffect, it->arg1)) {
@@ -283,7 +283,7 @@ uint32 field::process() {
 			core.solving_event.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_EXECUTE_TARGET: {
 		if (execute_target(it->step, it->peffect, it->arg1)) {
@@ -291,140 +291,140 @@ uint32 field::process() {
 			core.solving_event.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_DESTROY: {
 		if (destroy(it->step, it->ptarget, it->peffect, it->arg1, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_RELEASE: {
 		if (release(it->step, it->ptarget, it->peffect, it->arg1, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SENDTO: {
 		if (send_to(it->step, it->ptarget, it->peffect, it->arg1, it->arg2, it->arg3))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_DESTROY_REPLACE: {
 		if(destroy_replace(it->step, it->ptarget, (card*)it->ptr1, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_RELEASE_REPLACE: {
 		if (release_replace(it->step, it->ptarget, (card*)it->ptr1))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SENDTO_REPLACE: {
 		if (send_replace(it->step, it->ptarget, (card*)it->ptr1))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_MOVETOFIELD: {
 		if (move_to_field(it->step, (card*)it->ptarget, it->arg1, it->arg2 & 0xff, (it->arg2 >> 8) & 0xff, it->arg3))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_CHANGEPOS: {
 		if (change_position(it->step, it->ptarget, it->peffect, it->arg1, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_OPERATION_REPLACE: {
 		if (operation_replace(it->step, it->peffect, it->ptarget, (card*)it->ptr1, it->arg1))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_ACTIVATE_EFFECT: {
 		if (activate_effect(it->step, it->peffect))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SUMMON_RULE: {
 		if (summon(it->step, it->arg1 & 0xff, (card*)it->ptarget, it->peffect, (it->arg1 >> 8) & 0xff, (it->arg1 >> 16) & 0xff, (it->arg1 >> 24) & 0xff, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SPSUMMON_RULE: {
 		if (special_summon_rule(it->step, it->arg1, (card*)it->ptarget, it->arg2, it->arg3))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SPSUMMON: {
 		if (special_summon(it->step, it->peffect, it->arg1, it->ptarget, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_FLIP_SUMMON: {
 		if (flip_summon(it->step, it->arg1, (card*)(it->ptarget), it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_MSET: {
 		if (mset(it->step, it->arg1 & 0xff, (card*)it->ptarget, it->peffect, (it->arg1 >> 8) & 0xff, (it->arg1 >> 16) & 0xff, (it->arg1 >> 24) & 0xff, it->arg2))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SSET: {
 		if (sset(it->step, it->arg1, it->arg2, (card*)(it->ptarget), it->peffect, it->arg3))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SPSUMMON_STEP: {
 		if (special_summon_step(it->step, it->ptarget, (card*)(it->ptr1), it->arg1))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SSET_G: {
 		if (sset_g(it->step, it->arg1, it->arg2, it->ptarget, it->arg3, it->peffect, it->arg4)) {
 			core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_DRAW	: {
 		if (draw(it->step, it->peffect, it->arg1, (it->arg2 >> 4) & 0xf, (it->arg2) & 0xf, it->arg3))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_DAMAGE: {
 		int32 reason = it->arg1;
@@ -442,7 +442,7 @@ uint32 field::process() {
 				core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_RECOVER: {
 		if (recover(it->step, it->peffect, it->arg1, (it->arg2 >> 2) & 0x3, (it->arg2) & 0x3, it->arg3, (it->arg2 >> 4) & 0x1)) {
@@ -453,56 +453,56 @@ uint32 field::process() {
 				core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_EQUIP: {
 		if (equip(it->step, it->arg2 & 0xffff, (card*)it->ptr1, (card*)it->ptarget, (it->arg2 >> 16) & 0xff, (it->arg2 >> 24) & 0xff))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_GET_CONTROL: {
 		if (get_control(it->step, it->peffect, (it->arg2 >> 28) & 0xf, it->ptarget, (it->arg2 >> 24) & 0xf, (it->arg2 >> 8) & 0x3ff, it->arg2 & 0xff, it->arg3)) {
 			core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SWAP_CONTROL: {
 		if (swap_control(it->step, it->peffect, it->arg1, it->ptarget, (group*)it->ptr1, it->arg2, it->arg3)) {
 			core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SELF_DESTROY: {
 		if (self_destroy(it->step, (card*)it->ptr1, it->arg1)) {
 			core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_TRAP_MONSTER_ADJUST: {
 		if (trap_monster_adjust(it->step))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_PAY_LPCOST: {
 		if (pay_lp_cost(it->step, it->arg1, it->arg2, it->arg3))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_REMOVE_COUNTER: {
 		if (remove_counter(it->step, it->arg4, (card*)it->ptarget, (it->arg1 >> 16) & 0xff, (it->arg1 >> 8) & 0xff, it->arg1 & 0xff, it->arg2, it->arg3)) {
 			core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_ATTACK_DISABLE: {
 		if(it->step == 0) {
@@ -529,7 +529,7 @@ uint32 field::process() {
 			returns.ivalue[0] = 1;
 			core.units.pop_front();
 		}
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_ANNOUNCE_RACE: {
 		if(announce_race(it->step, it->arg1 & 0xffff, it->arg1 >> 16, it->arg2)) {
@@ -537,7 +537,7 @@ uint32 field::process() {
 		} else {
 			++it->step;
 		}
-		return PROCESSOR_WAITING | pduel->message_buffer.size();
+		return PROCESSOR_WAITING | pduel->buffer_size();
 	}
 	case PROCESSOR_ANNOUNCE_ATTRIB: {
 		if(announce_attribute(it->step, it->arg1 & 0xffff, it->arg1 >> 16, it->arg2)) {
@@ -545,7 +545,7 @@ uint32 field::process() {
 		} else {
 			++it->step;
 		}
-		return PROCESSOR_WAITING | pduel->message_buffer.size();
+		return PROCESSOR_WAITING | pduel->buffer_size();
 	}
 	case PROCESSOR_ANNOUNCE_CARD: {
 		if(announce_card(it->step, it->arg1)) {
@@ -553,7 +553,7 @@ uint32 field::process() {
 		} else {
 			++it->step;
 		}
-		return PROCESSOR_WAITING | pduel->message_buffer.size();
+		return PROCESSOR_WAITING | pduel->buffer_size();
 	}
 	case PROCESSOR_ANNOUNCE_NUMBER: {
 		if(announce_number(it->step, it->arg1)) {
@@ -561,28 +561,28 @@ uint32 field::process() {
 		} else {
 			++it->step;
 		}
-		return PROCESSOR_WAITING | pduel->message_buffer.size();
+		return PROCESSOR_WAITING | pduel->buffer_size();
 	}
 	case PROCESSOR_TOSS_DICE: {
 		if(toss_dice(it->step, it->peffect, it->arg1 >> 16, it->arg1 & 0xff, it->arg2 & 0xff, it->arg2 >> 16)) {
 			core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_TOSS_COIN: {
 		if (toss_coin(it->step, it->peffect, (it->arg1 >> 16), it->arg1 & 0xff, it->arg2)) {
 			core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_ROCK_PAPER_SCISSORS: {
 		if (rock_paper_scissors(it->step, it->arg1)) {
 			core.units.pop_front();
 		} else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SELECT_FUSION: {
 		if(it->step == 0) {
@@ -593,7 +593,7 @@ uint32 field::process() {
 			core.fusion_materials.clear();
 			if(!it->peffect) {
 				core.units.pop_front();
-				return pduel->message_buffer.size();
+				return pduel->buffer_size();
 			}
 			core.not_material = it->arg2;
 			core.sub_solving_event.push_back(e);
@@ -605,7 +605,7 @@ uint32 field::process() {
 			core.not_material = 0;
 			core.units.pop_front();
 		}
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SELECT_SYNCHRO: {
 		int32 ret = TRUE;
@@ -617,14 +617,14 @@ uint32 field::process() {
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SELECT_XMATERIAL: {
 		if (select_xyz_material(it->step, it->arg1 & 0xffff, it->arg1 >> 16, (card*)it->ptarget, it->arg2 & 0xffff, it->arg2 >> 16))
 			core.units.pop_front();
 		else
 			++it->step;
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_DISCARD_HAND: {
 		if(it->step == 0) {
@@ -644,14 +644,14 @@ uint32 field::process() {
 				cset.insert(pcard);
 			}
 			if(cset.size())
-				send_to(&cset, core.reason_effect, it->arg3, core.reason_player, it->arg1, LOCATION_GRAVE, 0, POS_FACEUP);
+				send_to(cset, core.reason_effect, it->arg3, core.reason_player, it->arg1, LOCATION_GRAVE, 0, POS_FACEUP);
 			else
 				returns.ivalue[0] = 0;
 			++it->step;
 		} else {
 			core.units.pop_front();
 		}
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_DISCARD_DECK: {
 		if(discard_deck(it->step, it->arg1 & 0xff, it->arg1 >> 16, it->arg2)) {
@@ -659,7 +659,7 @@ uint32 field::process() {
 		} else {
 			++it->step;
 		}
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_SORT_DECK: {
 		uint8 sort_player = it->arg1 & 0xffff;
@@ -710,7 +710,7 @@ uint32 field::process() {
 			}
 			core.units.pop_front();
 		}
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	case PROCESSOR_REMOVE_OVERLAY: {
 		if(remove_overlay_card(it->step, it->arg3, (card*)(it->ptarget), it->arg1 >> 16,
@@ -719,10 +719,10 @@ uint32 field::process() {
 		} else {
 			++it->step;
 		}
-		return pduel->message_buffer.size();
+		return pduel->buffer_size();
 	}
 	}
-	return pduel->message_buffer.size();
+	return pduel->buffer_size();
 }
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -897,7 +897,7 @@ void field::raise_event(card* event_card, uint32 event_code, effect* reason_effe
 		pgroup->is_readonly = GTYPE_READ_ONLY;
 		new_event.event_cards = pgroup;
 	} else
-		new_event.event_cards = 0;
+		new_event.event_cards = nullptr;
 	new_event.event_code = event_code;
 	new_event.reason_effect = reason_effect;
 	new_event.reason = reason;
@@ -906,15 +906,12 @@ void field::raise_event(card* event_card, uint32 event_code, effect* reason_effe
 	new_event.event_value = event_value;
 	core.queue_event.push_back(new_event);
 }
-void field::raise_event(card_set* event_cards, uint32 event_code, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 event_player, uint32 event_value) {
+void field::raise_event(const card_set& event_cards, uint32 event_code, effect* reason_effect, uint32 reason, uint8 reason_player, uint8 event_player, uint32 event_value) {
 	tevent new_event;
 	new_event.trigger_card = 0;
-	if (event_cards) {
-		group* pgroup = pduel->new_group(*event_cards);
-		pgroup->is_readonly = GTYPE_READ_ONLY;
-		new_event.event_cards = pgroup;
-	} else
-		new_event.event_cards = 0;
+	group* pgroup = pduel->new_group(event_cards);
+	pgroup->is_readonly = GTYPE_READ_ONLY;
+	new_event.event_cards = pgroup;
 	new_event.event_code = event_code;
 	new_event.reason_effect = reason_effect;
 	new_event.reason = reason;
@@ -931,7 +928,7 @@ void field::raise_single_event(card* trigger_card, card_set* event_cards, uint32
 		pgroup->is_readonly = GTYPE_READ_ONLY;
 		new_event.event_cards = pgroup;
 	} else
-		new_event.event_cards = 0;
+		new_event.event_cards = nullptr;
 	new_event.event_code = event_code;
 	new_event.reason_effect = reason_effect;
 	new_event.reason = reason;
@@ -1256,7 +1253,7 @@ int32 field::process_phase_event(int16 step, int32 phase) {
 		card_set cset;
 		for(int32 i = 0; i < returns.bvalue[0]; ++i)
 			cset.insert(core.select_cards[returns.bvalue[i + 1]]);
-		send_to(&cset, 0, REASON_RULE + REASON_DISCARD + REASON_ADJUST, infos.turn_player, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
+		send_to(cset, 0, REASON_RULE + REASON_DISCARD + REASON_ADJUST, infos.turn_player, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
 		return FALSE;
 	}
 	case 22: {
@@ -2816,7 +2813,7 @@ int32 field::process_battle_command(uint16 step) {
 		if(core.attack_target) {
 			raise_single_event(core.attack_target, 0, EVENT_BATTLE_START, 0, 0, 0, 0, 1);
 		}
-		raise_event((card*)0, EVENT_BATTLE_START, 0, 0, 0, 0, 0);
+		raise_event(nullptr, EVENT_BATTLE_START, 0, 0, 0, 0, 0);
 		process_single_event();
 		process_instant_event();
 		pduel->write_buffer8(MSG_HINT);
@@ -2853,7 +2850,7 @@ int32 field::process_battle_command(uint16 step) {
 				core.pre_field[1] = core.attack_target->fieldid_r;
 			raise_single_event(core.attack_target, 0, EVENT_BATTLE_CONFIRM, 0, 0, 0, 0, 1);
 		}
-		raise_event((card*)0, EVENT_BATTLE_CONFIRM, 0, 0, 0, 0, 0);
+		raise_event(nullptr, EVENT_BATTLE_CONFIRM, 0, 0, 0, 0, 0);
 		process_single_event();
 		process_instant_event();
 		pduel->write_buffer8(MSG_HINT);
@@ -2883,7 +2880,7 @@ int32 field::process_battle_command(uint16 step) {
 		raise_single_event(core.attacker, 0, EVENT_PRE_DAMAGE_CALCULATE, 0, 0, 0, 0, 0);
 		if(core.attack_target)
 			raise_single_event(core.attack_target, 0, EVENT_PRE_DAMAGE_CALCULATE, 0, 0, 0, 0, 1);
-		raise_event((card*)0, EVENT_PRE_DAMAGE_CALCULATE, 0, 0, 0, 0, 0);
+		raise_event(nullptr, EVENT_PRE_DAMAGE_CALCULATE, 0, 0, 0, 0, 0);
 		process_single_event();
 		process_instant_event();
 		pduel->write_buffer8(MSG_HINT);
@@ -3106,7 +3103,7 @@ int32 field::process_battle_command(uint16 step) {
 	}
 	case 29: {
 		if(core.battle_destroy_rep.size())
-			destroy(&core.battle_destroy_rep, 0, REASON_EFFECT | REASON_REPLACE, PLAYER_NONE);
+			destroy(core.battle_destroy_rep, 0, REASON_EFFECT | REASON_REPLACE, PLAYER_NONE);
 		if(core.desrep_chain.size())
 			add_process(PROCESSOR_OPERATION_REPLACE, 15, nullptr, nullptr, 0, 0);
 		adjust_all();
@@ -3133,7 +3130,7 @@ int32 field::process_battle_command(uint16 step) {
 		raise_single_event(core.attacker, 0, EVENT_BATTLED, 0, 0, PLAYER_NONE, 0, 0);
 		if(core.attack_target)
 			raise_single_event(core.attack_target, 0, EVENT_BATTLED, 0, 0, PLAYER_NONE, 0, 1);
-		raise_event((card*)0, EVENT_BATTLED, 0, 0, PLAYER_NONE, 0, 0);
+		raise_event(nullptr, EVENT_BATTLED, 0, 0, PLAYER_NONE, 0, 0);
 		process_single_event();
 		process_instant_event();
 		if(core.effect_damage_step) {
@@ -3195,15 +3192,15 @@ int32 field::process_battle_command(uint16 step) {
 			ed.insert(core.attack_target);
 		}
 		if(ing.size())
-			raise_event(&ing, EVENT_BATTLE_DESTROYING, 0, 0, 0, 0, 0);
+			raise_event(ing, EVENT_BATTLE_DESTROYING, 0, 0, 0, 0, 0);
 		if(ed.size()) {
-			raise_event(&ed, EVENT_BATTLE_DESTROYED, 0, 0, 0, 0, 0);
-			raise_event(&ed, EVENT_DESTROYED, 0, 0, 0, 0, 0);
+			raise_event(ed, EVENT_BATTLE_DESTROYED, 0, 0, 0, 0, 0);
+			raise_event(ed, EVENT_DESTROYED, 0, 0, 0, 0, 0);
 		}
 		raise_single_event(core.attacker, 0, EVENT_DAMAGE_STEP_END, 0, 0, 0, 0, 0);
 		if(core.attack_target)
 			raise_single_event(core.attack_target, 0, EVENT_DAMAGE_STEP_END, 0, 0, 0, 0, 1);
-		raise_event((card*)0, EVENT_DAMAGE_STEP_END, 0, 0, 0, 0, 0);
+		raise_event(nullptr, EVENT_DAMAGE_STEP_END, 0, 0, 0, 0, 0);
 		process_single_event();
 		process_instant_event();
 		core.attacker->set_status(STATUS_BATTLE_DESTROYED, FALSE);
@@ -3758,7 +3755,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 		infos.phase = PHASE_DRAW;
 		core.phase_action = FALSE;
 		core.hand_adjusted = FALSE;
-		raise_event((card*)0, EVENT_PHASE_START + PHASE_DRAW, 0, 0, 0, turn_player, 0);
+		raise_event(nullptr, EVENT_PHASE_START + PHASE_DRAW, 0, 0, 0, turn_player, 0);
 		process_instant_event();
 		adjust_all();
 		return FALSE;
@@ -3776,7 +3773,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 		}
 		pduel->write_buffer8(MSG_NEW_PHASE);
 		pduel->write_buffer16(infos.phase);
-		raise_event((card*)0, EVENT_PREDRAW, 0, 0, 0, turn_player, 0);
+		raise_event(nullptr, EVENT_PREDRAW, 0, 0, 0, turn_player, 0);
 		process_instant_event();
 		pduel->write_buffer8(MSG_HINT);
 		pduel->write_buffer8(HINT_EVENT);
@@ -3818,7 +3815,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 		}
 		pduel->write_buffer8(MSG_NEW_PHASE);
 		pduel->write_buffer16(infos.phase);
-		raise_event((card*)0, EVENT_PHASE_START + PHASE_STANDBY, 0, 0, 0, turn_player, 0);
+		raise_event(nullptr, EVENT_PHASE_START + PHASE_STANDBY, 0, 0, 0, turn_player, 0);
 		process_instant_event();
 		return FALSE;
 	}
@@ -3833,7 +3830,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 		//Main1
 		infos.phase = PHASE_MAIN1;
 		core.phase_action = FALSE;
-		raise_event((card*)0, EVENT_PHASE_START + PHASE_MAIN1, 0, 0, 0, turn_player, 0);
+		raise_event(nullptr, EVENT_PHASE_START + PHASE_MAIN1, 0, 0, 0, turn_player, 0);
 		process_instant_event();
 		adjust_all();
 		return FALSE;
@@ -3874,7 +3871,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 			adjust_all();
 			return FALSE;
 		}
-		raise_event((card*)0, EVENT_PHASE_START + PHASE_BATTLE_START, 0, 0, 0, turn_player, 0);
+		raise_event(nullptr, EVENT_PHASE_START + PHASE_BATTLE_START, 0, 0, 0, turn_player, 0);
 		process_instant_event();
 		adjust_all();
 		return FALSE;
@@ -3922,7 +3919,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 		//Main2
 		infos.phase = PHASE_MAIN2;
 		core.phase_action = FALSE;
-		raise_event((card*)0, EVENT_PHASE_START + PHASE_MAIN2, 0, 0, 0, turn_player, 0);
+		raise_event(nullptr, EVENT_PHASE_START + PHASE_MAIN2, 0, 0, 0, turn_player, 0);
 		process_instant_event();
 		adjust_all();
 		return FALSE;
@@ -3955,7 +3952,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 		}
 		pduel->write_buffer8(MSG_NEW_PHASE);
 		pduel->write_buffer16(infos.phase);
-		raise_event((card*)0, EVENT_PHASE_START + PHASE_END, 0, 0, 0, turn_player, 0);
+		raise_event(nullptr, EVENT_PHASE_START + PHASE_END, 0, 0, 0, turn_player, 0);
 		process_instant_event();
 		adjust_all();
 		return FALSE;
@@ -3974,7 +3971,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 		return FALSE;
 	}
 	case 18: {
-		raise_event((card*)0, EVENT_TURN_END, 0, 0, 0, turn_player, 0);
+		raise_event(nullptr, EVENT_TURN_END, 0, 0, 0, turn_player, 0);
 		process_instant_event();
 		adjust_all();
 		return FALSE;
@@ -4033,7 +4030,7 @@ int32 field::add_chain(uint16 step) {
 				phandler->enable_field_effect(false);
 				phandler->set_status(STATUS_ACT_FROM_HAND, TRUE);
 				if(phandler->data.type & TYPE_FIELD)
-					zone = 0x1 << 5;
+					zone = 0x1U << 5;
 				move_to_field(phandler, phandler->current.controler, phandler->current.controler, LOCATION_SZONE, POS_FACEUP, FALSE, 0, (phandler->data.type & TYPE_PENDULUM) ? TRUE : FALSE, zone);
 			} else {
 				phandler->set_status(STATUS_ACT_FROM_HAND, FALSE);
@@ -4246,7 +4243,7 @@ int32 field::add_chain(uint16 step) {
 					raise_single_event(pcard, 0, EVENT_BECOME_TARGET, peffect, 0, clit.triggering_player, 0, clit.chain_count);
 				process_single_event();
 				if(clit.target_cards->container.size())
-					raise_event(&clit.target_cards->container, EVENT_BECOME_TARGET, peffect, 0, clit.triggering_player, clit.triggering_player, clit.chain_count);
+					raise_event(clit.target_cards->container, EVENT_BECOME_TARGET, peffect, 0, clit.triggering_player, clit.triggering_player, clit.chain_count);
 			}
 		}
 		if(peffect->type & EFFECT_TYPE_ACTIVATE) {
@@ -4381,7 +4378,7 @@ int32 field::solve_chain(uint16 step, uint32 chainend_arg1, uint32 chainend_arg2
 		pduel->write_buffer8(cait->chain_count);
 		add_to_disable_check_list(cait->triggering_effect->get_handler());
 		adjust_instant();
-		raise_event((card*)0, EVENT_CHAIN_ACTIVATING, cait->triggering_effect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
+		raise_event(nullptr, EVENT_CHAIN_ACTIVATING, cait->triggering_effect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
 		process_instant_event();
 		return FALSE;
 	}
@@ -4395,7 +4392,7 @@ int32 field::solve_chain(uint16 step, uint32 chainend_arg1, uint32 chainend_arg2
 			check_chain_counter(peffect, cait->triggering_player, cait->chain_count, true);
 			core.new_fchain.remove_if([chaincount = cait->chain_count](chain ch) { return ch.evt.event_code == EVENT_CHAINING && ch.evt.event_value == chaincount; });
 			core.new_ochain.remove_if([chaincount = cait->chain_count](chain ch) { return ch.evt.event_code == EVENT_CHAINING && ch.evt.event_value == chaincount; });
-			raise_event((card*)0, EVENT_CHAIN_NEGATED, peffect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
+			raise_event(nullptr, EVENT_CHAIN_NEGATED, peffect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
 			process_instant_event();
 			core.units.begin()->step = 9;
 			return FALSE;
@@ -4403,7 +4400,7 @@ int32 field::solve_chain(uint16 step, uint32 chainend_arg1, uint32 chainend_arg2
 		release_oath_relation(peffect);
 		break_effect();
 		core.chain_solving = TRUE;
-		raise_event((card*)0, EVENT_CHAIN_SOLVING, peffect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
+		raise_event(nullptr, EVENT_CHAIN_SOLVING, peffect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
 		process_instant_event();
 		return FALSE;
 	}
@@ -4433,7 +4430,7 @@ int32 field::solve_chain(uint16 step, uint32 chainend_arg1, uint32 chainend_arg2
 					pduel->write_buffer8(MSG_CHAIN_DISABLED);
 					pduel->write_buffer8(cait->chain_count);
 				}
-				raise_event((card*)0, EVENT_CHAIN_DISABLED, peffect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
+				raise_event(nullptr, EVENT_CHAIN_DISABLED, peffect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
 				process_instant_event();
 				core.units.begin()->step = 3;
 				return FALSE;
@@ -4483,7 +4480,7 @@ int32 field::solve_chain(uint16 step, uint32 chainend_arg1, uint32 chainend_arg2
 			core.conti_player = PLAYER_NONE;
 		pduel->write_buffer8(MSG_CHAIN_SOLVED);
 		pduel->write_buffer8(cait->chain_count);
-		raise_event((card*)0, EVENT_CHAIN_SOLVED, cait->triggering_effect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
+		raise_event(nullptr, EVENT_CHAIN_SOLVED, cait->triggering_effect, 0, cait->triggering_player, cait->triggering_player, cait->chain_count);
 		adjust_disable_check_list();
 		process_instant_event();
 		core.units.begin()->step = 9;
@@ -4548,7 +4545,7 @@ int32 field::solve_chain(uint16 step, uint32 chainend_arg1, uint32 chainend_arg2
 				++cit;
 		}
 		if(core.leave_confirmed.size())
-			send_to(&core.leave_confirmed, 0, REASON_RULE, PLAYER_NONE, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
+			send_to(core.leave_confirmed, 0, REASON_RULE, PLAYER_NONE, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
 		return FALSE;
 	}
 	case 12: {
@@ -4567,7 +4564,7 @@ int32 field::solve_chain(uint16 step, uint32 chainend_arg1, uint32 chainend_arg2
 		return FALSE;
 	}
 	case 13: {
-		raise_event((card*)0, EVENT_CHAIN_END, 0, 0, 0, 0, 0);
+		raise_event(nullptr, EVENT_CHAIN_END, 0, 0, 0, 0, 0);
 		process_instant_event();
 		adjust_all();
 		if(chainend_arg1 != 0x101 || chainend_arg2 != TRUE) {
@@ -4920,8 +4917,8 @@ int32 field::adjust_step(uint16 step) {
 		}
 		if(core.control_adjust_set[0].size() || core.control_adjust_set[1].size()) {
 			core.re_adjust = TRUE;
-			get_control(&core.control_adjust_set[1 - infos.turn_player], 0, PLAYER_NONE, infos.turn_player, 0, 0, 0xff);
-			get_control(&core.control_adjust_set[infos.turn_player], 0, PLAYER_NONE, 1 - infos.turn_player, 0, 0, 0xff);
+			get_control(core.control_adjust_set[1 - infos.turn_player], 0, PLAYER_NONE, infos.turn_player, 0, 0, 0xff);
+			get_control(core.control_adjust_set[infos.turn_player], 0, PLAYER_NONE, 1 - infos.turn_player, 0, 0, 0xff);
 			for(auto& rcard : reason_cards) {
 				++core.readjust_map[rcard];
 				if(core.readjust_map[rcard] > 3)
@@ -4960,8 +4957,8 @@ int32 field::adjust_step(uint16 step) {
 			core.remove_brainwashing = res;
 			if(core.control_adjust_set[0].size() || core.control_adjust_set[1].size()) {
 				core.re_adjust = TRUE;
-				get_control(&core.control_adjust_set[1 - infos.turn_player], 0, PLAYER_NONE, infos.turn_player, 0, 0, 0xff);
-				get_control(&core.control_adjust_set[infos.turn_player], 0, PLAYER_NONE, 1 - infos.turn_player, 0, 0, 0xff);
+				get_control(core.control_adjust_set[1 - infos.turn_player], 0, PLAYER_NONE, infos.turn_player, 0, 0, 0xff);
+				get_control(core.control_adjust_set[infos.turn_player], 0, PLAYER_NONE, 1 - infos.turn_player, 0, 0, 0xff);
 			}
 		}
 		core.units.begin()->step = 7;
@@ -4995,7 +4992,7 @@ int32 field::adjust_step(uint16 step) {
 		}
 		if(destroy_set.size()) {
 			core.re_adjust = TRUE;
-			destroy(&destroy_set, 0, REASON_RULE, PLAYER_NONE);
+			destroy(destroy_set, 0, REASON_RULE, PLAYER_NONE);
 		}
 		return FALSE;
 	}
@@ -5128,7 +5125,7 @@ int32 field::adjust_step(uint16 step) {
 		return FALSE;
 	}
 	case 15: {
-		raise_event((card*)0, EVENT_ADJUST, 0, 0, PLAYER_NONE, PLAYER_NONE, 0);
+		raise_event(nullptr, EVENT_ADJUST, 0, 0, PLAYER_NONE, PLAYER_NONE, 0);
 		process_instant_event();
 		return FALSE;
 	}

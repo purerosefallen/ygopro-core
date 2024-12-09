@@ -11,9 +11,7 @@
 #include "common.h"
 #include "field.h"
 #include "effectset.h"
-#include <stdlib.h>
 #include <vector>
-#include <map>
 
 class card;
 class duel;
@@ -22,8 +20,12 @@ class effect;
 struct tevent;
 struct effect_set;
 struct effect_set_v;
-enum effect_flag : uint32;
-enum effect_flag2 : uint32;
+enum effect_flag : uint64;
+enum effect_flag2 : uint64;
+enum effect_category :uint64;
+enum code_type : int32;
+
+bool is_continuous_event(uint32 code);
 
 class effect {
 public:
@@ -34,7 +36,6 @@ public:
 	uint8 effect_owner{ PLAYER_NONE };
 	uint32 description{ 0 };
 	uint32 code{ 0 };
-	uint32 flag[2]{};
 	uint32 id{ 0 };
 	uint32 type{ 0 };
 	uint16 copy_id{ 0 };
@@ -43,18 +44,19 @@ public:
 	uint16 o_range{ 0 };
 	uint8 count_limit{ 0 };
 	uint8 count_limit_max{ 0 };
+	uint16 status{ 0 };
 	int32 reset_count{ 0 };
 	uint32 reset_flag{ 0 };
 	uint32 count_code{ 0 };
-	uint32 category{ 0 };
+	uint64 category{ 0 };
+	uint64 flag[2]{};
 	uint32 hint_timing[2]{};
 	uint32 card_type{ 0 };
 	uint32 active_type{ 0 };
 	uint16 active_location{ 0 };
 	uint16 active_sequence{ 0 };
 	card* active_handler{ nullptr };
-	uint16 status{ 0 };
-	std::vector<uint32> label;
+	std::vector<lua_Integer> label;
 	int32 label_object{ 0 };
 	int32 condition{ 0 };
 	int32 cost{ 0 };
@@ -90,15 +92,16 @@ public:
 	int32 is_chainable(uint8 tp);
 	int32 is_hand_trigger() const;
 	int32 is_initial_single() const;
+	int32 is_monster_effect() const;
 	int32 reset(uint32 reset_level, uint32 reset_type);
 	void dec_count(uint8 playerid = PLAYER_NONE);
 	void recharge();
 	int32 get_value(uint32 extraargs = 0);
 	int32 get_value(card* pcard, uint32 extraargs = 0);
 	int32 get_value(effect* peffect, uint32 extraargs = 0);
-	void get_value(uint32 extraargs, std::vector<int32>* result);
-	void get_value(card* pcard, uint32 extraargs, std::vector<int32>* result);
-	void get_value(effect* peffect, uint32 extraargs, std::vector<int32>* result);
+	void get_value(uint32 extraargs, std::vector<lua_Integer>& result);
+	void get_value(card* pcard, uint32 extraargs, std::vector<lua_Integer>& result);
+	void get_value(effect* peffect, uint32 extraargs, std::vector<lua_Integer>& result);
 	int32 get_integer_value();
 	int32 check_value_condition(uint32 extraargs = 0);
 	void* get_label_object();
@@ -113,7 +116,7 @@ public:
 	void set_activate_location();
 	void set_active_type();
 	uint32 get_active_type(uint8 uselast = TRUE);
-	int32 get_code_type() const;
+	code_type get_code_type() const;
 
 	bool is_flag(effect_flag x) const {
 		return !!(flag[0] & x);
@@ -173,6 +176,8 @@ public:
 #define RESET_OVERLAY		0x04000000
 #define RESET_MSCHANGE		0x08000000
 
+constexpr uint32 RESETS_STANDARD = RESET_TOFIELD | RESET_LEAVE | RESET_TODECK | RESET_TOHAND | RESET_TEMP_REMOVE | RESET_REMOVE | RESET_TOGRAVE | RESET_TURN_SET;
+
 //========== Types ==========
 #define EFFECT_TYPE_SINGLE			0x0001	//
 #define EFFECT_TYPE_FIELD			0x0002	//
@@ -194,7 +199,7 @@ constexpr uint32 EFFECT_TYPES_TRIGGER_LIKE = EFFECT_TYPE_ACTIVATE | EFFECT_TYPE_
 constexpr uint32 EFFECT_TYPES_CHAIN_LINK = EFFECT_TYPES_TRIGGER_LIKE | EFFECT_TYPE_FLIP | EFFECT_TYPE_IGNITION;
 
 //========== Flags ==========
-enum effect_flag : uint32 {
+enum effect_flag : uint64 {
 	EFFECT_FLAG_INITIAL				= 0x0001,
 	EFFECT_FLAG_FUNC_VALUE			= 0x0002,
 	EFFECT_FLAG_COUNT_LIMIT			= 0x0004,
@@ -208,7 +213,7 @@ enum effect_flag : uint32 {
 	EFFECT_FLAG_CANNOT_DISABLE		= 0x0400,
 	EFFECT_FLAG_PLAYER_TARGET		= 0x0800,
 	EFFECT_FLAG_BOTH_SIDE			= 0x1000,
-//	EFFECT_FLAG_COPY_INHERIT		= 0x2000,
+	EFFECT_FLAG_COPY				= 0x2000,
 	EFFECT_FLAG_DAMAGE_STEP			= 0x4000,
 	EFFECT_FLAG_DAMAGE_CAL			= 0x8000,
 	EFFECT_FLAG_DELAY				= 0x10000,
@@ -227,8 +232,11 @@ enum effect_flag : uint32 {
 	EFFECT_FLAG_ACTIVATE_CONDITION	= 0x20000000,
 //	EFFECT_FLAG_CVAL_CHECK			= 0x40000000,
 	EFFECT_FLAG_IMMEDIATELY_APPLY	= 0x80000000,
+	EFFECT_FLAG_COIN				= 0x100000000,
+	EFFECT_FLAG_DICE				= 0x200000000,
+	EFFECT_FLAG_FUSION_SUMMON		= 0x400000000,
 };
-enum effect_flag2 : uint32 {
+enum effect_flag2 : uint64 {
 	EFFECT_FLAG2_REPEAT_UPDATE			= 0x0001,
 	EFFECT_FLAG2_COF					= 0x0002,
 	EFFECT_FLAG2_WICKED					= 0x0004,
@@ -238,9 +246,52 @@ enum effect_flag2 : uint32 {
 	EFFECT_FLAG2_ACTIVATE_MONSTER_SZONE = 0x0400,
 };
 constexpr effect_flag operator|(effect_flag flag1, effect_flag flag2) {
-	return static_cast<effect_flag>(static_cast<uint32>(flag1) | static_cast<uint32>(flag2));
+	return static_cast<effect_flag>(static_cast<uint64>(flag1) | static_cast<uint64>(flag2));
 }
-constexpr uint32 INTERNAL_FLAGS = EFFECT_FLAG_INITIAL | EFFECT_FLAG_FUNC_VALUE | EFFECT_FLAG_COUNT_LIMIT | EFFECT_FLAG_FIELD_ONLY | EFFECT_FLAG_ABSOLUTE_TARGET;
+constexpr uint64 INTERNAL_FLAGS = EFFECT_FLAG_INITIAL | EFFECT_FLAG_COPY | EFFECT_FLAG_FUNC_VALUE | EFFECT_FLAG_COUNT_LIMIT | EFFECT_FLAG_FIELD_ONLY | EFFECT_FLAG_ABSOLUTE_TARGET;
+
+//Category
+enum effect_category : uint64 {
+	CATEGORY_DESTROY		= 0x1,
+	CATEGORY_RELEASE		= 0x2,
+	CATEGORY_REMOVE			= 0x4,
+	CATEGORY_TOHAND			= 0x8,
+	CATEGORY_TODECK			= 0x10,
+	CATEGORY_TOGRAVE		= 0x20,
+	CATEGORY_DECKDES		= 0x40,
+	CATEGORY_HANDES			= 0x80,
+	CATEGORY_SUMMON			= 0x100,
+	CATEGORY_SPECIAL_SUMMON	= 0x200,
+	CATEGORY_TOKEN			= 0x400,
+	CATEGORY_GRAVE_ACTION	= 0x800,
+	CATEGORY_POSITION		= 0x1000,
+	CATEGORY_CONTROL		= 0x2000,
+	CATEGORY_DISABLE		= 0x4000,
+	CATEGORY_DISABLE_SUMMON = 0x8000,
+	CATEGORY_DRAW			= 0x10000,
+	CATEGORY_SEARCH			= 0x20000,
+	CATEGORY_EQUIP			= 0x40000,
+	CATEGORY_DAMAGE			= 0x80000,
+	CATEGORY_RECOVER		= 0x100000,
+	CATEGORY_ATKCHANGE		= 0x200000,
+	CATEGORY_DEFCHANGE		= 0x400000,
+	CATEGORY_COUNTER		= 0x800000,
+	CATEGORY_COIN			= 0x1000000,
+	CATEGORY_DICE			= 0x2000000,
+	CATEGORY_LEAVE_GRAVE	= 0x4000000,
+	CATEGORY_GRAVE_SPSUMMON = 0x8000000,
+	CATEGORY_NEGATE			= 0x10000000,
+	CATEGORY_ANNOUNCE		= 0x20000000,
+	CATEGORY_FUSION_SUMMON	= 0x40000000,
+	CATEGORY_TOEXTRA		= 0x80000000,
+};
+
+const std::map<uint64, uint64> category_checklist{
+	{CATEGORY_COIN, EFFECT_FLAG_COIN},
+	{CATEGORY_DICE, EFFECT_FLAG_DICE},
+	{CATEGORY_FUSION_SUMMON, EFFECT_FLAG_FUSION_SUMMON},
+};
+
 //========== Codes ==========
 #define EFFECT_IMMUNE_EFFECT			1	//
 #define EFFECT_DISABLE					2	//
@@ -583,10 +634,12 @@ constexpr int32 HALF_DAMAGE = 0x80000001;
 #define MAX_CARD_ID			0xfffffff
 
 // The type of effect code
-#define CODE_CUSTOM		1	// header + id (28 bits)
-#define CODE_COUNTER	2	// header + counter_id (16 bits)
-#define CODE_PHASE		3	// header + phase_id (12 bits)
-#define CODE_VALUE		4	// numeric value, max = 4095
+enum code_type : int32 {
+	CODE_CUSTOM = 1,	// header + id (28 bits)
+	CODE_COUNTER,		// header + counter_id (16 bits)
+	CODE_PHASE,			// header + phase_id (12 bits)
+	CODE_VALUE,			// numeric value, max = 4095
+};
 
 const std::unordered_set<uint32> continuous_event{
 	EVENT_ADJUST,
@@ -595,6 +648,11 @@ const std::unordered_set<uint32> continuous_event{
 	EVENT_PRE_BATTLE_DAMAGE,
 	EVENT_SPSUMMON_SUCCESS_G_P,
 };
-bool is_continuous_event(uint32 code);
+
+const std::unordered_set<uint32> affect_summoning_effect{
+	EFFECT_CANNOT_DISABLE_SUMMON,
+	EFFECT_CANNOT_DISABLE_SPSUMMON,
+	EVENT_BE_PRE_MATERIAL,
+};
 
 #endif /* EFFECT_H_ */
