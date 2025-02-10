@@ -123,11 +123,11 @@ struct field_effect {
 	grant_effect_container grant_effect;
 };
 struct field_info {
+	uint64_t card_id{ 1 };
 	int32_t field_id{ 1 };
 	uint16_t copy_id{ 1 };
 	uint16_t turn_id{};
 	uint16_t turn_id_by_player[2]{};
-	uint16_t card_id{ 1 };
 	uint16_t phase{};
 	uint8_t turn_player{};
 	uint8_t priorities[2]{};
@@ -255,9 +255,9 @@ struct processor {
 	std::set<effect*> reseted_effects;
 	std::unordered_map<card*, uint32_t> readjust_map;
 	std::unordered_set<card*> unique_cards[2];
-	std::unordered_map<uint32_t, uint32_t> effect_count_code;
-	std::unordered_map<uint32_t, uint32_t> effect_count_code_duel;
-	std::unordered_map<uint32_t, uint32_t> effect_count_code_chain;
+	std::unordered_map<uint32_t, int32_t> effect_count_code[3];
+	std::unordered_map<uint32_t, int32_t> effect_count_code_duel[3];
+	std::unordered_map<uint32_t, int32_t> effect_count_code_chain[3];
 	std::unordered_map<uint32_t, uint32_t> spsummon_once_map[2];
 	std::multimap<int32_t, card*, std::greater<int32_t>> xmaterial_lst;
 
@@ -348,7 +348,7 @@ struct processor {
 	uint8_t current_player{ PLAYER_NONE };
 	uint8_t conti_player{ PLAYER_NONE };
 	uint8_t select_deck_sequence_revealed{ FALSE };
-	uint8_t selecting_player{ PLAYER_NONE };
+	uint8_t selecting_player{ 0 };
 	activity_map summon_counter;
 	activity_map normalsummon_counter;
 	activity_map spsummon_counter;
@@ -418,9 +418,9 @@ public:
 	void release_oath_relation(effect* reason_effect);
 	void reset_phase(uint32_t phase);
 	void reset_chain();
-	void add_effect_code(uint32_t code, uint32_t playerid);
-	uint32_t get_effect_code(uint32_t code, uint32_t playerid);
-	void dec_effect_code(uint32_t code, uint32_t playerid);
+	void add_effect_code(uint32_t code, int32_t playerid);
+	int32_t get_effect_code(uint32_t code, int32_t playerid);
+	void dec_effect_code(uint32_t code, int32_t playerid);
 
 	void filter_field_effect(uint32_t code, effect_set* eset, uint8_t sort = TRUE);
 	void filter_affected_cards(effect* peffect, card_set* cset);
@@ -458,7 +458,7 @@ public:
 	int32_t check_spsummon_counter(uint8_t playerid, uint8_t ct = 1);
 	bool is_select_hide_deck_sequence(uint8_t playerid);
 
-	int32_t check_lp_cost(uint8_t playerid, uint32_t cost, uint32_t must_pay);
+	int32_t check_lp_cost(uint8_t playerid, int32_t cost, uint32_t must_pay);
 	void save_lp_cost() {}
 	void restore_lp_cost() {}
 	int32_t pay_lp_cost(uint32_t step, uint8_t playerid, uint32_t cost, uint32_t must_pay);

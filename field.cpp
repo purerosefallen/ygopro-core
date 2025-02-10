@@ -12,6 +12,7 @@
 #include "effect.h"
 #include "interpreter.h"
 #include <cstring>
+#include <algorithm>
 
 int32_t field::field_used_count[32] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5};
 
@@ -901,7 +902,7 @@ int32_t field::check_extra_link(int32_t playerid) {
 		uint32_t checking = linked_zone & ~checked;
 		if(!checking)
 			return FALSE;
-		uint32_t rightmost = checking & (-checking);
+		uint32_t rightmost = checking & (~checking + 1);
 		checked |= rightmost;
 		if(rightmost < 0x10000U) {
 			for(int32_t i = 0; i < 7; ++i) {
@@ -1119,11 +1120,9 @@ void field::reverse_deck(uint8_t playerid) {
 	if(count == 0)
 		return;
 	for(int32_t i = 0; i < count / 2; ++i) {
-		card* tmp = player[playerid].list_main[i];
-		tmp->current.sequence = count - 1 - i;
+		player[playerid].list_main[i]->current.sequence = count - 1 - i;
 		player[playerid].list_main[count - 1 - i]->current.sequence = i;
-		player[playerid].list_main[i] = player[playerid].list_main[count - 1 - i];
-		player[playerid].list_main[count - 1 - i] = tmp;
+		std::swap(player[playerid].list_main[i], player[playerid].list_main[count - 1 - i]);
 	}
 }
 void field::refresh_player_info(uint8_t playerid) {
@@ -1355,36 +1354,42 @@ void field::reset_chain() {
 			(*rm)->handler->remove_effect((*rm));
 	}
 }
-void field::add_effect_code(uint32_t code, uint32_t playerid) {
-	auto* count_map = &core.effect_count_code;
-	if(code & EFFECT_COUNT_CODE_DUEL)
-		count_map = &core.effect_count_code_duel;
-	else if(code & EFFECT_COUNT_CODE_CHAIN)
-		count_map = &core.effect_count_code_chain;
-	(*count_map)[code + (playerid << 30)]++;
+void field::add_effect_code(uint32_t code, int32_t playerid) {
+	if (playerid < 0 || playerid > PLAYER_NONE)
+		return;
+	auto count_map = &core.effect_count_code[playerid];
+	if (code & EFFECT_COUNT_CODE_DUEL)
+		count_map = &core.effect_count_code_duel[playerid];
+	else if (code & EFFECT_COUNT_CODE_CHAIN)
+		count_map = &core.effect_count_code_chain[playerid];
+	(*count_map)[code]++;
 }
-uint32_t field::get_effect_code(uint32_t code, uint32_t playerid) {
-	auto* count_map = &core.effect_count_code;
+int32_t field::get_effect_code(uint32_t code, int32_t playerid) {
+	if (playerid < 0 || playerid > PLAYER_NONE)
+		return 0;
+	auto count_map = &core.effect_count_code[playerid];
 	if(code & EFFECT_COUNT_CODE_DUEL)
-		count_map = &core.effect_count_code_duel;
+		count_map = &core.effect_count_code_duel[playerid];
 	else if(code & EFFECT_COUNT_CODE_CHAIN)
-		count_map = &core.effect_count_code_chain;
-	auto iter = count_map->find(code + (playerid << 30));
+		count_map = &core.effect_count_code_chain[playerid];
+	auto iter = count_map->find(code);
 	if(iter == count_map->end())
 		return 0;
 	return iter->second;
 }
-void field::dec_effect_code(uint32_t code, uint32_t playerid) {
-	auto* count_map = &core.effect_count_code;
-	if(code & EFFECT_COUNT_CODE_DUEL)
-		count_map = &core.effect_count_code_duel;
-	else if(code & EFFECT_COUNT_CODE_CHAIN)
-		count_map = &core.effect_count_code_chain;
-	auto iter = count_map->find(code + (playerid << 30));
+void field::dec_effect_code(uint32_t code, int32_t playerid) {
+	if (playerid < 0 || playerid > PLAYER_NONE)
+		return;
+	auto count_map = &core.effect_count_code[playerid];
+	if (code & EFFECT_COUNT_CODE_DUEL)
+		count_map = &core.effect_count_code_duel[playerid];
+	else if (code & EFFECT_COUNT_CODE_CHAIN)
+		count_map = &core.effect_count_code_chain[playerid];
+	auto iter = count_map->find(code);
 	if(iter == count_map->end())
 		return;
-	if(iter->second > 0)
-		--iter->second;
+	if (iter->second > 0)
+		iter->second--;
 }
 void field::filter_field_effect(uint32_t code, effect_set* eset, uint8_t sort) {
 	auto rg = effects.aura_effect.equal_range(code);
@@ -2319,9 +2324,9 @@ int32_t field::check_spsummon_counter(uint8_t playerid, uint8_t ct) {
 bool field::is_select_hide_deck_sequence(uint8_t playerid) {
 	return !core.select_deck_sequence_revealed && !(core.duel_options & DUEL_REVEAL_DECK_SEQ) && playerid == core.selecting_player;
 }
-int32_t field::check_lp_cost(uint8_t playerid, uint32_t lp, uint32_t must_pay) {
+int32_t field::check_lp_cost(uint8_t playerid, int32_t cost, uint32_t must_pay) {
 	effect_set eset;
-	int32_t val = lp;
+	int32_t val = cost;
 	filter_player_effect(playerid, EFFECT_LPCOST_CHANGE, &eset);
 	for(int32_t i = 0; i < eset.size(); ++i) {
 		pduel->lua->add_param(core.reason_effect, PARAM_TYPE_EFFECT);
@@ -2338,7 +2343,7 @@ int32_t field::check_lp_cost(uint8_t playerid, uint32_t lp, uint32_t must_pay) {
 		tevent e;
 		e.event_cards = 0;
 		e.event_player = playerid;
-		e.event_value = lp;
+		e.event_value = cost;
 		e.reason = 0;
 		e.reason_effect = core.reason_effect;
 		e.reason_player = playerid;

@@ -34,11 +34,13 @@ uint32_t card::set_entity_code(uint32_t entity_code, bool remove_alias) {
 	if (remove_alias && dat.alias)
 		dat.alias = 0;
 	data = dat;
-	pduel->write_buffer8(MSG_MOVE);
-	pduel->write_buffer32(data.code);
-	pduel->write_buffer32(get_info_location());
-	pduel->write_buffer32(get_info_location());
-	pduel->write_buffer32(0);
+	pduel->write_buffer8(MSG_UPDATE_CARD);
+	pduel->write_buffer8(current.controler);
+	pduel->write_buffer8(current.location);
+	pduel->write_buffer8(current.sequence);
+	unsigned char query_buffer[0x1000];
+	auto query_len = get_infos(query_buffer, 0xe81fff, 0);
+	pduel->write_buffer(query_buffer, query_len);
 	return code;
 }
 uint32_t card::get_summon_info() {
@@ -128,17 +130,17 @@ bool card::card_operation_sort(card* c1, card* c2) {
 	}
 	if(c1->current.location != c2->current.location)
 		return c1->current.location < c2->current.location;
-	if(c1->current.location & LOCATION_OVERLAY) {
+	if(c1->current.location == LOCATION_OVERLAY) {
 		if(c1->overlay_target && c2->overlay_target && c1->overlay_target->current.sequence != c2->overlay_target->current.sequence)
 			return c1->overlay_target->current.sequence < c2->overlay_target->current.sequence;
 		else
 			return c1->current.sequence < c2->current.sequence;
-	} else if (c1->current.location & LOCATION_DECK && pduel->game_field->is_select_hide_deck_sequence(cp1)) {
+	} else if (c1->current.location == LOCATION_DECK && pduel->game_field->is_select_hide_deck_sequence(cp1)) {
 		// if deck reversed and the card being at the top, it should go first
 		if(pduel->game_field->core.deck_reversed) {
-			if(c1->current.sequence == pduel->game_field->player[cp1].list_main.size() - 1)
+			if(c1 == pduel->game_field->player[cp1].list_main.back())
 				return false;
-			if(c2->current.sequence == pduel->game_field->player[cp2].list_main.size() - 1)
+			if(c2 == pduel->game_field->player[cp2].list_main.back())
 				return true;
 		}
 		// faceup deck cards should go at the very first
@@ -151,8 +153,8 @@ bool card::card_operation_sort(card* c1, card* c2) {
 				return c2_faceup;
 		}
 		// sort deck as card property
-		auto c1_type = c1->data.type & 0x7;
-		auto c2_type = c2->data.type & 0x7;
+		auto c1_type = c1->data.type & (TYPE_MONSTER | TYPE_SPELL | TYPE_TRAP);
+		auto c2_type = c2->data.type & (TYPE_MONSTER | TYPE_SPELL | TYPE_TRAP);
 		// monster should go before spell, and then trap
 		if(c1_type != c2_type)
 			return c1_type > c2_type;
@@ -1021,13 +1023,13 @@ uint32_t card::get_level() {
 		temp.level = level + up;
 	}
 	level += up;
-	if(level < 1 && (get_type() & TYPE_MONSTER))
+	if (level < 1)
 		level = 1;
 	temp.level = UINT32_MAX;
 	return level;
 }
 uint32_t card::get_rank() {
-	if(!(data.type & TYPE_XYZ) || (status & STATUS_NO_LEVEL))
+	if (!(data.type & TYPE_XYZ))
 		return 0;
 	if(assume_type == ASSUME_RANK)
 		return assume_value;
@@ -1054,13 +1056,13 @@ uint32_t card::get_rank() {
 		temp.level = rank + up;
 	}
 	rank += up;
-	if(rank < 1 && (get_type() & TYPE_MONSTER))
+	if (rank < 1)
 		rank = 1;
 	temp.level = UINT32_MAX;
 	return rank;
 }
 uint32_t card::get_link() {
-	if(!(data.type & TYPE_LINK) || (status & STATUS_NO_LEVEL))
+	if (!(data.type & TYPE_LINK))
 		return 0;
 	return data.level;
 }
@@ -1113,22 +1115,43 @@ uint32_t card::check_xyz_level(card* pcard, uint32_t lv) {
 	uint32_t rlv = pduel->game_field->rose_level;
 	if(rcard == this && rlv == lv)
 		return rlv;
+	int32_t min_count = 0;
+	effect_set mset;
+	filter_effect(EFFECT_XYZ_MIN_COUNT, &mset);
+	for (int32_t i = 0; i < mset.size(); ++i) {
+		pduel->lua->add_param(this, PARAM_TYPE_CARD);
+		pduel->lua->add_param(pcard, PARAM_TYPE_CARD);
+		int32_t count = mset[i]->get_value(2);
+		if (count > min_count)
+			min_count = count;
+	}
+	if (min_count > 0xf)
+		min_count = 0xf;
 	effect_set eset;
 	filter_effect(EFFECT_XYZ_LEVEL, &eset);
 	if(!eset.size()) {
-		uint32_t lev = get_level();
-		if(lev == lv)
-			return lev;
+		uint32_t card_lv = get_level();
+		if (card_lv == lv)
+			return (card_lv & MAX_XYZ_LEVEL) | ((uint32_t)min_count << 12);
 		return 0;
 	}
 	for(int32_t i = 0; i < eset.size(); ++i) {
 		pduel->lua->add_param(this, PARAM_TYPE_CARD);
 		pduel->lua->add_param(pcard, PARAM_TYPE_CARD);
 		uint32_t lev = eset[i]->get_value(2);
-		if(((lev & 0xfff) == lv))
-			return lev & 0xffff;
-		if(((lev >> 16) & 0xfff) == lv)
-			return (lev >> 16) & 0xffff;
+		uint16_t lv1 = lev & MAX_XYZ_LEVEL;
+		uint16_t count1 = (lev & 0xf000) >> 12;
+		if (count1 < min_count)
+			count1 = min_count;
+		if (lv1 == lv)
+			return lv1 | ((uint32_t)count1 << 12);
+		lev >>= 16;
+		uint16_t lv2 = lev & MAX_XYZ_LEVEL;
+		uint16_t count2 = (lev & 0xf000) >> 12;
+		if (count2 < min_count)
+			count2 = min_count;
+		if (lv2 == lv)
+			return lv2 | ((uint32_t)count2 << 12);
 	}
 	return 0;
 }
@@ -1475,7 +1498,7 @@ int32_t card::is_extra_link_state() {
 		uint32_t checking = linked_zone & ~checked;
 		if(!checking)
 			return FALSE;
-		uint32_t rightmost = checking & (-checking);
+		uint32_t rightmost = checking & (~checking + 1);
 		checked |= rightmost;
 		if(rightmost < 0x10000U) {
 			for(int32_t i = 0; i < 7; ++i) {
