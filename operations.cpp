@@ -2895,8 +2895,8 @@ int32_t field::special_summon_rule(uint16_t step, uint8_t sumplayer, card* targe
 		else if(proc->value == SUMMON_TYPE_XYZ)
 		{
 			matreason = REASON_XYZ;
-			pduel->game_field->rose_card = 0;
-			pduel->game_field->rose_level = 0;
+			rose_card = 0;
+			rose_level = 0;
 		}
 		else if(proc->value == SUMMON_TYPE_LINK)
 			matreason = REASON_LINK;
@@ -3835,7 +3835,7 @@ int32_t field::destroy(uint16_t step, group * targets, effect * reason_effect, u
 	return TRUE;
 }
 int32_t field::release_replace(uint16_t step, group* targets, card* target) {
-	if(!(target->current.location & (LOCATION_ONFIELD | LOCATION_HAND))) {
+	if(target->current.location & (LOCATION_GRAVE | LOCATION_REMOVED)) {
 		target->current.reason = target->temp.reason;
 		target->current.reason_effect = target->temp.reason_effect;
 		target->current.reason_player = target->temp.reason_player;
@@ -3892,7 +3892,7 @@ int32_t field::release(uint16_t step, group * targets, effect * reason_effect, u
 		if(cv.size() > 1)
 			std::sort(cv.begin(), cv.end(), card::card_operation_sort);
 		for (auto& pcard : cv) {
-			if(!(pcard->current.location & (LOCATION_ONFIELD | LOCATION_HAND))) {
+			if(pcard->current.location & (LOCATION_GRAVE | LOCATION_REMOVED)) {
 				pcard->current.reason = pcard->temp.reason;
 				pcard->current.reason_effect = pcard->temp.reason_effect;
 				pcard->current.reason_player = pcard->temp.reason_player;
@@ -4327,10 +4327,8 @@ int32_t field::send_to(uint16_t step, group * targets, effect * reason_effect, u
 			if(nloc == LOCATION_GRAVE)
 				pcard->reset(RESET_TOGRAVE, RESET_EVENT);
 			if(nloc == LOCATION_REMOVED || ((pcard->data.type & TYPE_TOKEN) && pcard->sendto_param.location == LOCATION_REMOVED)) {
-				if(pcard->current.reason & REASON_TEMPORARY) {
+				if(pcard->current.reason & REASON_TEMPORARY)
 					pcard->reset(RESET_TEMP_REMOVE, RESET_EVENT);
-					pcard->set_status(STATUS_CANNOT_CHANGE_FORM, FALSE);
-				}
 				else
 					pcard->reset(RESET_REMOVE, RESET_EVENT);
 			}

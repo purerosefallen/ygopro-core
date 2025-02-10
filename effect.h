@@ -148,10 +148,10 @@ public:
 //#define EFFECT_STATUS_ACTIVATED	0x0002
 #define EFFECT_STATUS_SPSELF	0x0004
 
-#define EFFECT_COUNT_CODE_OATH	0x10000000
-#define EFFECT_COUNT_CODE_DUEL	0x20000000
-#define EFFECT_COUNT_CODE_CHAIN	0x40000000
-#define EFFECT_COUNT_CODE_SINGLE	0x1
+#define EFFECT_COUNT_CODE_OATH	0x10000000U
+#define EFFECT_COUNT_CODE_DUEL	0x20000000U
+#define EFFECT_COUNT_CODE_CHAIN	0x40000000U
+#define EFFECT_COUNT_CODE_SINGLE	0x1U
 
 //========== Reset ==========
 #define RESET_SELF_TURN		0x10000000
@@ -549,6 +549,7 @@ const std::map<uint64_t, uint64_t> category_checklist{
 #define EFFECT_TUNER					369
 #define EFFECT_KAISER_COLOSSEUM			370
 #define EFFECT_REPLACE_DAMAGE			371
+#define EFFECT_XYZ_MIN_COUNT			372
 
 //#define EVENT_STARTUP		1000
 #define EVENT_FLIP			1001
@@ -626,12 +627,15 @@ const std::map<uint64_t, uint64_t> category_checklist{
 #define EVENT_REMOVE_COUNTER		0x20000
 #define EVENT_CUSTOM				0x10000000
 
-constexpr int32_t DOUBLE_DAMAGE = 0x80000000;
-constexpr int32_t HALF_DAMAGE = 0x80000001;
+constexpr int32_t DOUBLE_DAMAGE = INT32_MIN;
+constexpr int32_t HALF_DAMAGE = INT32_MIN + 1;
+
+constexpr uint32_t MAX_PARAMETER = 0xffffU;
+constexpr uint32_t MAX_XYZ_LEVEL = 0x0fffU;
 
 // flag effect
-#define EFFECT_FLAG_EFFECT	0x20000000
-#define MAX_CARD_ID			0xfffffff
+#define EFFECT_FLAG_EFFECT	0x20000000U
+#define MAX_CARD_ID			0x0fffffffU
 
 // The type of effect code
 enum code_type : int32_t {
