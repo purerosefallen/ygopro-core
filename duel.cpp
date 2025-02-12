@@ -18,7 +18,7 @@
 duel::duel() {
 	lua = new interpreter(this);
 	game_field = new field(this);
-	game_field->temp_card = new_card(0);
+	game_field->temp_card = new_card(TEMP_CARD_ID);
 	game_field->rose_card = 0;
 	game_field->rose_level = 0;
 	message_buffer.reserve(SIZE_MESSAGE_BUFFER);
@@ -47,8 +47,11 @@ void duel::clear() {
 	cards.clear();
 	groups.clear();
 	effects.clear();
+	assumes.clear();
+	sgroups.clear();
+	uncopy.clear();
 	game_field = new field(this);
-	game_field->temp_card = new_card(0);
+	game_field->temp_card = new_card(TEMP_CARD_ID);
 	game_field->rose_card = 0;
 	game_field->rose_level = 0;
 }
