@@ -12,6 +12,61 @@
 #include "effect.h"
 #include "group.h"
 
+int32_t scriptlib::card_get_card_registered(lua_State *L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	check_param(L, PARAM_TYPE_FUNCTION, 2);
+	card* pcard = *(card**) lua_touserdata(L, 1);
+	char type[4] = "ALL";
+	if (!pcard) {
+		lua_pushnil(L);
+		return 1;
+	}
+	if (lua_gettop(L) > 2) {
+		check_param(L, PARAM_TYPE_STRING, 3);
+		const char* str = lua_tostring(L, 3);
+		strncpy(type, str, 3);
+		type[3] = '\0';
+	}
+	effect_set eset;
+	duel* pduel = pcard->pduel;
+	int32_t extraargs = lua_gettop(L) - 3;
+	for(auto& eit : pcard->single_effect) {
+		if(pduel->lua->is_effect_check(L, eit.second, 2, extraargs)) {
+			eset.push_back(eit.second);
+		}
+	}
+	for(auto& eit : pcard->field_effect) {
+		if(pduel->lua->is_effect_check(L, eit.second, 2, extraargs)) {
+			eset.push_back(eit.second);
+		}
+	}
+	int size = 0;
+	for (int32_t i = 0; i < eset.size(); ++i) {
+		if (strcmp(type, "ALL") == 0) {
+			interpreter::effect2value(L, eset[i]);
+			++size;
+		}
+		if (strcmp(type, "COP") == 0 && eset[i]->copy_id != 0) {
+			interpreter::effect2value(L, eset[i]);
+			++size;
+		}
+		if (strcmp(type, "INI") == 0 && eset[i]->reset_flag == 0 && eset[i]->copy_id == 0) {
+			interpreter::effect2value(L, eset[i]);
+			++size;
+		}
+		if (strcmp(type, "REG") == 0 && eset[i]->reset_flag != 0 && eset[i]->copy_id == 0) {
+			interpreter::effect2value(L, eset[i]);
+			++size;
+		}	
+	}
+	if (!size) {
+		lua_pushnil(L);
+		return 1;
+	}
+	return size;
+}
+
 int32_t scriptlib::card_is_ritual_type(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);
@@ -3588,6 +3643,7 @@ int32_t scriptlib::card_set_spsummon_once(lua_State *L) {
 
 static const struct luaL_Reg cardlib[] = {
 	//millux
+	{ "GetCardRegistered", scriptlib::card_get_card_registered },
 	{ "IsRitualType", scriptlib::card_is_ritual_type },
 	{ "SetEntityCode", scriptlib::card_set_entity_code },
 	{ "SetCardData", scriptlib::card_set_card_data },

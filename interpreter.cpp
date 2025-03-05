@@ -209,6 +209,24 @@ void interpreter::unregister_group(group *pgroup) {
 	luaL_unref(lua_state, LUA_REGISTRYINDEX, pgroup->ref_handle);
 	pgroup->ref_handle = 0;
 }
+int32_t interpreter::is_effect_check(lua_State* L, effect* peffect, int32_t findex, int32_t extraargs) {
+	if (!findex || lua_isnil(L, findex))
+		return TRUE;
+	luaL_checkstack(L, 1 + extraargs, nullptr);
+	lua_pushvalue(L, findex);
+	interpreter::effect2value(L, peffect);
+	for (int32_t i = 0; i < extraargs; ++i)
+		lua_pushvalue(L, (int32_t)(-extraargs - 2));
+	if (lua_pcall(L, 1 + extraargs, 1, 0)) {
+		sprintf(pduel->strbuffer, "%s", lua_tostring(L, -1));
+		handle_message(pduel, 1);
+		lua_pop(L, 1);
+		return OPERATION_FAIL;
+	}
+	int32_t result = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+	return result;
+}
 int32_t interpreter::load_script(const char* script_name) {
 	int len = 0;
 	byte* buffer = ::read_script(script_name, &len);

@@ -64,6 +64,7 @@ public:
 	void register_group(group* pgroup);
 	void unregister_group(group* pgroup);
 
+	int32_t is_effect_check(lua_State *L, effect *peffect, int32_t findex, int32_t extraargs);
 	int32_t load_script(const char* script_name);
 	int32_t load_card_script(uint32_t code);
 	void add_param(void* param, LuaParamType type, bool front = false);
