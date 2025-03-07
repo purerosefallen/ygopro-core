@@ -2171,7 +2171,6 @@ int32_t field::adjust_grant_effect() {
 		for(auto& pcard : add_set) {
 			effect* ceffect = geffect->clone();
 			ceffect->owner = pcard;
-			uint32_t flag = ceffect->flag[1];
 			ceffect->is_granted = 1;
 			pcard->add_effect(ceffect);
 			eit.second.emplace(pcard, ceffect);
