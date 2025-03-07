@@ -116,12 +116,14 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 
 	lua_pushinteger(lua_state, GETEFFECT_ALL);
 	lua_setglobal(lua_state, "GETEFFECT_ALL");
-	lua_pushinteger(lua_state, GETEFFECT_INI);
-	lua_setglobal(lua_state, "GETEFFECT_INI");
-	lua_pushinteger(lua_state, GETEFFECT_COP);
-	lua_setglobal(lua_state, "GETEFFECT_COP");
-	lua_pushinteger(lua_state, GETEFFECT_REG);
-	lua_setglobal(lua_state, "GETEFFECT_REG");
+	lua_pushinteger(lua_state, GETEFFECT_INITIAL);
+	lua_setglobal(lua_state, "GETEFFECT_INITIAL");
+	lua_pushinteger(lua_state, GETEFFECT_COPY);
+	lua_setglobal(lua_state, "GETEFFECT_COPY");
+	lua_pushinteger(lua_state, GETEFFECT_GAIN);
+	lua_setglobal(lua_state, "GETEFFECT_GAIN");
+	lua_pushinteger(lua_state, GETEFFECT_GRANT);
+	lua_setglobal(lua_state, "GETEFFECT_GRANT");
 
 	// lua_pushinteger(lua_state, EFFECT_SEA_PULSE);
 	// lua_setglobal(lua_state, "EFFECT_SEA_PULSE");

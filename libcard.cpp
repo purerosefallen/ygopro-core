@@ -15,7 +15,8 @@
 int32_t scriptlib::card_get_card_registered(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);
-	check_param(L, PARAM_TYPE_FUNCTION, 2);
+	if(!lua_isnil(L, 2))
+		check_param(L, PARAM_TYPE_FUNCTION, 2);
 	card* pcard = *(card**) lua_touserdata(L, 1);
 	int type = GETEFFECT_ALL;
 	if (!pcard) {
@@ -41,14 +42,17 @@ int32_t scriptlib::card_get_card_registered(lua_State *L) {
 	}
 	int size = 0;
 	for (int32_t i = 0; i < eset.size(); ++i) {
-		if (eset[i]->flag[1] & EFFECT_FLAG2_GRANT)
-			continue;
-		if (type & GETEFFECT_COP && eset[i]->copy_id != 0 
-		|| type & GETEFFECT_INI && eset[i]->reset_flag == 0 && eset[i]->copy_id == 0 
-		|| type & GETEFFECT_REG && eset[i]->reset_flag != 0 && eset[i]->copy_id == 0) {
+		if (eset[i]->flag[1] & EFFECT_FLAG2_GRANT) {
+			if (type & GETEFFECT_GRANT) {
+				interpreter::effect2value(L, eset[i]);
+				++size;
+			}
+		} else if ((type & GETEFFECT_COPY && eset[i]->copy_id != 0)
+			|| (type & GETEFFECT_INITIAL && eset[i]->reset_flag == 0 && eset[i]->copy_id == 0)
+			|| (type & GETEFFECT_GAIN && eset[i]->reset_flag != 0 && eset[i]->copy_id == 0)) {
 			interpreter::effect2value(L, eset[i]);
 			++size;
-		}	
+		}
 	}
 	if (!size) {
 		lua_pushnil(L);
