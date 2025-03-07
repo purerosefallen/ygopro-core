@@ -42,7 +42,7 @@ int32_t scriptlib::card_get_card_registered(lua_State *L) {
 	}
 	int size = 0;
 	for (int32_t i = 0; i < eset.size(); ++i) {
-		if (eset[i]->flag[1] & EFFECT_FLAG2_GRANT) {
+		if (eset[i]->is_granted) {
 			if (type & GETEFFECT_GRANT) {
 				interpreter::effect2value(L, eset[i]);
 				++size;

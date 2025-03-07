@@ -62,6 +62,8 @@ public:
 	int32_t value{ 0 };
 	int32_t operation{ 0 };
 	uint8_t cost_checked{ FALSE };
+	uint8_t is_granted{ 0 };
+	
 	effect_set required_handorset_effects;
 	LuaParamType object_type{ PARAM_TYPE_INT };
 
@@ -239,7 +241,6 @@ enum effect_flag2 : uint64_t {
 	EFFECT_FLAG2_SPOSITCH			= 0x0100, // flag2 from 0x0100 are koishipro use
 	EFFECT_FLAG2_AVAILABLE_BD		= 0x0200,
 	EFFECT_FLAG2_ACTIVATE_MONSTER_SZONE = 0x0400,
-	EFFECT_FLAG2_GRANT = 0x0800,
 };
 constexpr effect_flag operator|(effect_flag flag1, effect_flag flag2) {
 	return static_cast<effect_flag>(static_cast<uint64_t>(flag1) | static_cast<uint64_t>(flag2));
