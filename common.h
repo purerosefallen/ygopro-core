@@ -442,4 +442,10 @@ inline bool check_playerid(int32_t playerid) {
 #define CARDDATA_RSCALE			11
 #define CARDDATA_LINK_MARKER	12
 
+//
+#define GETEFFECT_ALL	0x7
+#define GETEFFECT_INI	0x1
+#define GETEFFECT_COP	0x2
+#define GETEFFECT_REG	0x4
+
 #endif /* COMMON_H_ */
