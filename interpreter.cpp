@@ -36,11 +36,10 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_pop(lua_state, 1);
 	luaL_requiref(lua_state, "math", luaopen_math, 1);
 	lua_pop(lua_state, 1);
+	luaL_requiref(lua_state, "coroutine", luaopen_coroutine, 1);
+	lua_pop(lua_state, 1);
 #endif
 
-	//add bit lib back
-	lua_getglobal(lua_state, "bit32");
-	lua_setglobal(lua_state, "bit");
 	//open all libs
 	scriptlib::open_cardlib(lua_state);
 	scriptlib::open_effectlib(lua_state);
@@ -99,10 +98,10 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_setglobal(lua_state, "EFFECT_EXTRA_TOMAIN_KOISHI");
 	lua_pushinteger(lua_state, EFFECT_OVERLAY_REMOVE_COST_CHANGE_KOISHI);
 	lua_setglobal(lua_state, "EFFECT_OVERLAY_REMOVE_COST_CHANGE_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_ALLOW_SYNCHRO_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_ALLOW_SYNCHRO_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_MINIATURE_GARDEN_GIRL);
-	lua_setglobal(lua_state, "EFFECT_MINIATURE_GARDEN_GIRL");
+	lua_pushinteger(lua_state, EFFECT_SYNCHRO_LEVEL_EX);
+	lua_setglobal(lua_state, "EFFECT_ALLOW_SYNCHRO_KOISHI"); // for compat only
+	// lua_pushinteger(lua_state, EFFECT_MINIATURE_GARDEN_GIRL);
+	// lua_setglobal(lua_state, "EFFECT_MINIATURE_GARDEN_GIRL");
 	lua_pushinteger(lua_state, EFFECT_ADD_SUMMON_TYPE_KOISHI);
 	lua_setglobal(lua_state, "EFFECT_ADD_SUMMON_TYPE_KOISHI");
 	lua_pushinteger(lua_state, EFFECT_REMOVE_SUMMON_TYPE_KOISHI);
@@ -113,8 +112,20 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_setglobal(lua_state, "EFFECT_CHANGE_SUMMON_LOCATION_KOISHI");
 	lua_pushinteger(lua_state, EFFECT_LINK_SPELL_KOISHI);
 	lua_setglobal(lua_state, "EFFECT_LINK_SPELL_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_SEA_PULSE);
-	lua_setglobal(lua_state, "EFFECT_SEA_PULSE");
+
+	lua_pushinteger(lua_state, GETEFFECT_ALL);
+	lua_setglobal(lua_state, "GETEFFECT_ALL");
+	lua_pushinteger(lua_state, GETEFFECT_INITIAL);
+	lua_setglobal(lua_state, "GETEFFECT_INITIAL");
+	lua_pushinteger(lua_state, GETEFFECT_COPY);
+	lua_setglobal(lua_state, "GETEFFECT_COPY");
+	lua_pushinteger(lua_state, GETEFFECT_GAIN);
+	lua_setglobal(lua_state, "GETEFFECT_GAIN");
+	lua_pushinteger(lua_state, GETEFFECT_GRANT);
+	lua_setglobal(lua_state, "GETEFFECT_GRANT");
+
+	// lua_pushinteger(lua_state, EFFECT_SEA_PULSE);
+	// lua_setglobal(lua_state, "EFFECT_SEA_PULSE");
 	lua_pushinteger(lua_state, EFFECT_MAP_OF_HEAVEN);
 	lua_setglobal(lua_state, "EFFECT_MAP_OF_HEAVEN");
 
@@ -208,6 +219,24 @@ void interpreter::unregister_group(group *pgroup) {
 		return;
 	luaL_unref(lua_state, LUA_REGISTRYINDEX, pgroup->ref_handle);
 	pgroup->ref_handle = 0;
+}
+int32_t interpreter::is_effect_check(lua_State* L, effect* peffect, int32_t findex, int32_t extraargs) {
+	if (!findex || lua_isnil(L, findex))
+		return TRUE;
+	luaL_checkstack(L, 1 + extraargs, nullptr);
+	lua_pushvalue(L, findex);
+	interpreter::effect2value(L, peffect);
+	for (int32_t i = 0; i < extraargs; ++i)
+		lua_pushvalue(L, (int32_t)(-extraargs - 2));
+	if (lua_pcall(L, 1 + extraargs, 1, 0)) {
+		sprintf(pduel->strbuffer, "%s", lua_tostring(L, -1));
+		handle_message(pduel, 1);
+		lua_pop(L, 1);
+		return OPERATION_FAIL;
+	}
+	int32_t result = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+	return result;
 }
 int32_t interpreter::load_script(const char* script_name) {
 	int len = 0;

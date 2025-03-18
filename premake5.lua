@@ -1,5 +1,6 @@
 project "ocgcore"
     kind "StaticLib"
+    cppdialect "C++14"
 
     files { "*.cpp", "*.h" }
     links { LUA_LIB_NAME }
@@ -12,7 +13,7 @@ project "ocgcore"
     end
 
     filter "not action:vs*"
-        buildoptions { "-std=c++14" }
+        buildoptions { }
 
     filter "system:bsd"
         defines { "LUA_USE_POSIX" }
