@@ -18,8 +18,6 @@ class duel;
 class group;
 class effect;
 struct tevent;
-struct effect_set;
-struct effect_set_v;
 enum effect_flag : uint64_t;
 enum effect_flag2 : uint64_t;
 enum effect_category :uint64_t;
@@ -42,8 +40,8 @@ public:
 	uint16_t range{ 0 };
 	uint16_t s_range{ 0 };
 	uint16_t o_range{ 0 };
-	uint8_t count_limit{ 0 };
-	uint8_t count_limit_max{ 0 };
+	uint8_t count_limit{ 0 };	//left count of activation
+	uint8_t count_limit_max{ 0 };	//max count of activation
 	uint16_t status{ 0 };
 	int32_t reset_count{ 0 };
 	uint32_t reset_flag{ 0 };
@@ -64,6 +62,8 @@ public:
 	int32_t value{ 0 };
 	int32_t operation{ 0 };
 	uint8_t cost_checked{ FALSE };
+	uint8_t is_granted{ 0 };
+	
 	effect_set required_handorset_effects;
 	LuaParamType object_type{ PARAM_TYPE_INT };
 
@@ -133,14 +133,11 @@ public:
 #define EFFECT_CANNOT_LOSE_KOISHI			37564153
 #define EFFECT_EXTRA_TOMAIN_KOISHI			37564154
 #define EFFECT_OVERLAY_REMOVE_COST_CHANGE_KOISHI			37564155
-#define EFFECT_ALLOW_SYNCHRO_KOISHI			37564156
-#define EFFECT_MINIATURE_GARDEN_GIRL		37564157
 #define EFFECT_ADD_SUMMON_TYPE_KOISHI		37564158
 #define EFFECT_REMOVE_SUMMON_TYPE_KOISHI	37564159
 #define EFFECT_CHANGE_SUMMON_TYPE_KOISHI	37564160
 #define EFFECT_CHANGE_SUMMON_LOCATION_KOISHI				37564161
 #define EFFECT_LINK_SPELL_KOISHI			37564162
-#define EFFECT_SEA_PULSE					37564163
 #define EFFECT_MAP_OF_HEAVEN				77702007
 
 //status
@@ -550,6 +547,8 @@ const std::map<uint64_t, uint64_t> category_checklist{
 #define EFFECT_KAISER_COLOSSEUM			370
 #define EFFECT_REPLACE_DAMAGE			371
 #define EFFECT_XYZ_MIN_COUNT			372
+#define EFFECT_SYNCHRO_LEVEL_EX		373
+#define EFFECT_RITUAL_LEVEL_EX		374
 
 //#define EVENT_STARTUP		1000
 #define EVENT_FLIP			1001

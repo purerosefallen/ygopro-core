@@ -29,6 +29,7 @@ public:
 	static int32_t check_param_count(lua_State* L, int32_t count);
 	static int32_t check_action_permission(lua_State* L);
 	//millux
+	static int32_t card_get_card_registered(lua_State *L);
 	static int32_t card_is_ritual_type(lua_State *L);
 	static int32_t card_set_entity_code(lua_State *L);
 	static int32_t card_set_card_data(lua_State *L);

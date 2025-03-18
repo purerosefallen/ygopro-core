@@ -12,6 +12,55 @@
 #include "effect.h"
 #include "group.h"
 
+int32_t scriptlib::card_get_card_registered(lua_State *L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	if(!lua_isnil(L, 2))
+		check_param(L, PARAM_TYPE_FUNCTION, 2);
+	card* pcard = *(card**) lua_touserdata(L, 1);
+	int type = GETEFFECT_ALL;
+	if (!pcard) {
+		lua_pushnil(L);
+		return 1;
+	}
+	if (lua_gettop(L) > 2) {
+		check_param(L, PARAM_TYPE_INT, 3);
+		type = lua_tointeger(L, 3);
+	}
+	effect_set eset;
+	duel* pduel = pcard->pduel;
+	int32_t extraargs = lua_gettop(L) - 3;
+	for(auto& eit : pcard->single_effect) {
+		if(pduel->lua->is_effect_check(L, eit.second, 2, extraargs)) {
+			eset.push_back(eit.second);
+		}
+	}
+	for(auto& eit : pcard->field_effect) {
+		if(pduel->lua->is_effect_check(L, eit.second, 2, extraargs)) {
+			eset.push_back(eit.second);
+		}
+	}
+	int size = 0;
+	for (int32_t i = 0; i < eset.size(); ++i) {
+		if (eset[i]->is_granted) {
+			if (type & GETEFFECT_GRANT) {
+				interpreter::effect2value(L, eset[i]);
+				++size;
+			}
+		} else if ((type & GETEFFECT_COPY && eset[i]->copy_id != 0)
+			|| (type & GETEFFECT_INITIAL && eset[i]->reset_flag == 0 && eset[i]->copy_id == 0)
+			|| (type & GETEFFECT_GAIN && eset[i]->reset_flag != 0 && eset[i]->copy_id == 0)) {
+			interpreter::effect2value(L, eset[i]);
+			++size;
+		}
+	}
+	if (!size) {
+		lua_pushnil(L);
+		return 1;
+	}
+	return size;
+}
+
 int32_t scriptlib::card_is_ritual_type(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);
@@ -87,11 +136,13 @@ int32_t scriptlib::card_set_card_data(lua_State *L) {
 		pcard->data.link_marker = lua_tointeger(L, 3);
 		break;
 	}
-	pduel->write_buffer8(MSG_MOVE);
-	pduel->write_buffer32(pcard->data.code);
-	pduel->write_buffer32(pcard->get_info_location());
-	pduel->write_buffer32(pcard->get_info_location());
-	pduel->write_buffer32(0);
+	pduel->write_buffer8(MSG_UPDATE_CARD);
+	pduel->write_buffer8(pcard->current.controler);
+	pduel->write_buffer8(pcard->current.location);
+	pduel->write_buffer8(pcard->current.sequence);
+	unsigned char query_buffer[0x1000];
+	auto query_len = pcard->get_infos(query_buffer, 0xe81fff, 0);
+	pduel->write_buffer(query_buffer, query_len);
 	return 0;
 }
 int32_t scriptlib::card_get_link_marker(lua_State *L) {
@@ -194,7 +245,7 @@ int32_t scriptlib::card_get_fusion_code(lua_State *L) {
 		return count;
 	effect_set eset;
 	pcard->filter_effect(EFFECT_ADD_FUSION_CODE, &eset);
-	for(int32_t i = 0; i < eset.size(); ++i)
+	for(effect_set::size_type i = 0; i < eset.size(); ++i)
 		lua_pushinteger(L, eset[i]->get_value(pcard));
 	return count + eset.size();
 }
@@ -211,7 +262,7 @@ int32_t scriptlib::card_get_link_code(lua_State *L) {
 	}
 	effect_set eset;
 	pcard->filter_effect(EFFECT_ADD_LINK_CODE, &eset);
-	for(int32_t i = 0; i < eset.size(); ++i)
+	for(effect_set::size_type i = 0; i < eset.size(); ++i)
 		lua_pushinteger(L, eset[i]->get_value(pcard));
 	return count + eset.size();
 }
@@ -229,7 +280,7 @@ int32_t scriptlib::card_is_fusion_code(lua_State *L) {
 	fcode.insert(code1);
 	if(code2)
 		fcode.insert(code2);
-	for(int32_t i = 0; i < eset.size(); ++i)
+	for(effect_set::size_type i = 0; i < eset.size(); ++i)
 		fcode.insert(eset[i]->get_value(pcard));
 	uint32_t count = lua_gettop(L) - 1;
 	uint32_t result = FALSE;
@@ -259,7 +310,7 @@ int32_t scriptlib::card_is_link_code(lua_State *L) {
 	fcode.insert(code1);
 	if(code2)
 		fcode.insert(code2);
-	for(int32_t i = 0; i < eset.size(); ++i)
+	for(effect_set::size_type i = 0; i < eset.size(); ++i)
 		fcode.insert(eset[i]->get_value(pcard));
 	uint32_t count = lua_gettop(L) - 1;
 	uint32_t result = FALSE;
@@ -1989,7 +2040,7 @@ int32_t scriptlib::card_is_has_effect(lua_State *L) {
 			check_player = PLAYER_NONE;
 	}
 	int32_t size = 0;
-	for(int32_t i = 0; i < eset.size(); ++i) {
+	for(effect_set::size_type i = 0; i < eset.size(); ++i) {
 		if(check_player == PLAYER_NONE || eset[i]->check_count_limit(check_player)) {
 			interpreter::effect2value(L, eset[i]);
 			++size;
@@ -3586,6 +3637,7 @@ int32_t scriptlib::card_set_spsummon_once(lua_State *L) {
 
 static const struct luaL_Reg cardlib[] = {
 	//millux
+	{ "GetCardRegistered", scriptlib::card_get_card_registered },
 	{ "IsRitualType", scriptlib::card_is_ritual_type },
 	{ "SetEntityCode", scriptlib::card_set_entity_code },
 	{ "SetCardData", scriptlib::card_set_card_data },
