@@ -1,0 +1,177 @@
+stages:
+  - prepare
+  - build
+  - combine
+  - deploy
+
+variables:
+  GIT_DEPTH: "1"
+
+lua:
+  stage: prepare
+  tags:
+    - linux
+  script:
+    - wget -O - https://cdn02.moecube.com:444/ygopro-build-materials/lua-5.4.4.tar.gz | tar zfx -
+    - mv lua-5.4.4 lua
+    - cp premake/lua.lua lua/premake5.lua
+    - wget -O - https://cdn01.moecube.com/ygopro-build-materials/sqlite-autoconf-3360000.tar.gz | tar zfx -
+    - mv sqlite-autoconf-3360000 sqlite3
+  artifacts:
+    paths:
+      - lua
+      - sqlite3
+
+mat_windows:
+  stage: prepare
+  tags:
+    - linux
+  script:
+    - apt update; apt -y install wget tar patch p7zip-full
+    # premake5.exe
+    - wget https://cdn01.moecube.com/ygopro-build-materials/premake-5.0.0-beta5-windows.zip
+    - 7z x -y premake-5.0.0-beta5-windows.zip
+  artifacts:
+    paths:
+      - premake5.exe
+
+mat_macos:
+  stage: prepare
+  tags:
+    - linux
+  script:
+    - apt update; apt -y install wget tar
+    - wget -O - https://cdn01.moecube.com/ygopro-build-materials/premake-5.0.0-beta5-macosx.tar.gz | tar zfx -
+    - chmod +x premake5
+  artifacts:
+    paths:
+      - premake5
+
+.build_unix:
+  stage: build
+  tags:
+    - linux
+  image: git-registry.moenext.com/mycard/docker-ygopro-builder
+  variables:
+    PREMAKE_OS: linux
+    BUILD_TYPE: x64
+    DIST_PATH: build/bin/x64/Release
+    PREMAKE5_PATH: premake5
+  script:
+    - ln -sf premake/dll.lua .
+    - $PREMAKE5_PATH gmake --file=dll.lua --os=$PREMAKE_OS --sqlite3-dir=sqlite3
+    - cd build
+    - make config=release_${BUILD_TYPE} -j$(nproc)
+    - cd ..
+    - mkdir -p dist/$BUILD_TYPE
+    - cp $DIST_PATH/libocgcore.* dist/$BUILD_TYPE/
+    - cp $DIST_PATH/libsqlite3.* dist/$BUILD_TYPE/ || true
+  artifacts:
+    paths:
+      - dist
+
+build_linux_x64:
+  extends: .build_unix
+
+build_linux_x32:
+  extends: .build_unix
+  variables:
+    BUILD_TYPE: x32
+    DIST_PATH: build/bin/x32/Release
+  before_script:
+    - apt update; apt -y install gcc-multilib g++-multilib
+
+build_wasm:
+  extends: .build_unix
+  variables:
+    PREMAKE_OS: emscripten
+    BUILD_TYPE: wasm
+    DIST_PATH: wasm
+    WASM: '1'
+  before_script:
+    - mkdir -p wasm
+  image: git-registry.moenext.com/mycard/docker-ygopro-builder:emscripten
+
+.build_windows:
+  stage: build
+  dependencies:
+    - mat_windows
+    - lua
+  tags:
+    - vs
+  before_script:
+    - copy premake\dll.lua dll.lua
+    - '.\premake5.exe vs2019 --file=dll.lua --sqlite3-dir=sqlite3'
+    - mkdir dist
+  artifacts:
+    paths:
+      - dist
+
+build_windows_x32:
+  extends: .build_windows
+  script:
+    - cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\msbuild.exe" build\ocgcoredll.sln /t:Build /p:Configuration=Release /p:Platform=Win32'
+    - mkdir dist\x32
+    - copy build\bin\x32\Release\ocgcore.dll dist\x32\ocgcore.dll
+    - copy build\bin\x32\Release\sqlite3.dll dist\x32\sqlite3.dll
+
+build_windows_x64:
+  extends: .build_windows
+  script:
+    - cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\msbuild.exe" build\ocgcoredll.sln /t:Build /p:Configuration=Release /p:Platform=x64'
+    - mkdir dist\x64
+    - copy build\bin\x64\Release\ocgcore.dll dist\x64\ocgcore.dll
+    - copy build\bin\x64\Release\sqlite3.dll dist\x64\sqlite3.dll
+
+.build_macos_arch:
+  extends: .build_unix
+  tags:
+    - macos
+  variables:
+    PREMAKE_OS: macosx
+    PREMAKE5_PATH: ./premake5
+
+build_macos_x64:
+  extends: .build_macos_arch
+  variables:
+    BUILD_TYPE: x64
+
+build_macos_m1:
+  extends: .build_macos_arch
+  tags:
+    - macos-m1
+  variables:
+    BUILD_TYPE: arm64
+    DIST_PATH: build/bin/arm64/Release
+
+build_macos:
+  stage: combine
+  dependencies:
+    - build_macos_x64
+    - build_macos_m1
+  tags:
+    - macos
+  script:
+    - mkdir -p dist/macos
+    - lipo -create -output dist/macos/libocgcore.dylib dist/x64/libocgcore.dylib dist/arm64/libocgcore.dylib
+    - lipo -create -output dist/macos/libsqlite3.dylib dist/x64/libsqlite3.dylib dist/arm64/libsqlite3.dylib
+    - rm -rf dist/x64 dist/arm64
+  artifacts:
+    paths:
+      - dist
+
+upload_to_minio:
+  stage: deploy
+  dependencies:
+    - build_linux_x32
+    - build_linux_x64
+    - build_windows_x32
+    - build_windows_x64
+    - build_macos
+    - build_wasm
+  tags: 
+    - linux
+  script:
+    - aws s3 --endpoint=https://minio.moenext.com:9000 sync --delete dist/ s3://mycard/libocgcore-koishi
+  only:
+    - master
