@@ -1,4 +1,6 @@
 newoption { trigger = "lua-dir", description = "", value = "PATH", default = "./lua" }
+newoption { trigger = "wasm", description = "" }
+newoption { trigger = "sqlite3-dir", description = "", value = "PATH" }
 
 function GetParam(param)
     return _OPTIONS[param] or os.getenv(string.upper(string.gsub(param,"-","_")))
@@ -9,19 +11,30 @@ if not os.isdir(LUA_DIR) then
     LUA_DIR="../lua"
 end
 
+WASM = GetParam("wasm")
+
+SQLITE3_DIR=GetParam("sqlite3-dir")
+
 workspace "ocgcoredll"
     location "build"
     language "C++"
     cppdialect "C++14"
-
     configurations { "Release", "Debug" }
-    platforms { "x32", "x64" }
+    if WASM then
+        toolset "emcc"
+        platforms { "wasm" }
+    else
+        platforms { "x64", "x32", "arm64" }
+    end
     
     filter "platforms:x32"
         architecture "x32"
 
     filter "platforms:x64"
         architecture "x64"
+
+    filter "platforms:arm64"
+        architecture "ARM64"
 
     filter "configurations:Release"
         optimize "Speed"
@@ -45,6 +58,8 @@ workspace "ocgcoredll"
         disablewarnings { "4334" }
 
     filter "action:vs*"
+        cdialect "C11"
+        conformancemode "On"
         buildoptions { "/utf-8" }
         defines { "_CRT_SECURE_NO_WARNINGS" }
 
@@ -60,6 +75,11 @@ workspace "ocgcoredll"
     filter "system:linux"
         defines { "LUA_USE_LINUX" }
         buildoptions { "-fPIC" }
+        linkoptions { "-static-libstdc++", "-static-libgcc" }
+
+    filter "system:emscripten"
+        defines { "LUA_USE_LONGJMP", "LUA_USE_C89" }
+        buildoptions { "-fPIC" }
 
 filter {}
 
@@ -74,3 +94,36 @@ project "ocgcore"
     links { "lua" }
     
     includedirs { LUA_DIR .. "/src" }
+
+    filter "system:emscripten"
+        targetextension ".wasm"
+        linkoptions { "-s MODULARIZE=1", "-s EXPORT_NAME=\"createOcgcore\"", "--no-entry", "-s EXPORTED_FUNCTIONS=[\"_set_script_reader\",\"_set_card_reader\",\"_set_message_handler\",\"_create_duel\",\"_start_duel\",\"_end_duel\",\"_set_player_info\",\"_get_log_message\",\"_get_message\",\"_process\",\"_new_card\",\"_new_tag_card\",\"_query_card\",\"_query_field_count\",\"_query_field_card\",\"_query_field_info\",\"_set_responsei\",\"_set_responseb\",\"_preload_script\"]", "-s ENVIRONMENT=web,node", "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", "-s ALLOW_TABLE_GROWTH=1", "-s ALLOW_MEMORY_GROWTH=1", "-o ../wasm/libocgcore.js" }
+
+if not WASM and SQLITE3_DIR and os.isdir(SQLITE3_DIR) then
+project "sqlite3"
+    kind "SharedLib"
+    language "C"
+
+    files {
+        SQLITE3_DIR .. "/sqlite3.c",
+        SQLITE3_DIR .. "/sqlite3.h"
+    }
+
+    filter "system:windows"
+        systemversion "latest"
+        defines { "SQLITE_API=__declspec(dllexport)" }
+
+    filter "system:linux or system:macosx"
+        pic "On"
+
+    filter "system:linux"
+        linkoptions { "-static-libstdc++", "-static-libgcc" }
+
+    filter "configurations:Debug"
+        symbols "On"
+        defines { "DEBUG" }
+
+    filter "configurations:Release"
+        optimize "On"
+        defines { "NDEBUG" }
+end
