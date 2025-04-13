@@ -106,7 +106,13 @@ void field::add_card(uint8_t playerid, card* pcard, uint8_t location, uint8_t se
 	if (pcard->current.location != 0)
 		return;
 	if (!is_location_useable(playerid, location, sequence))
-		return;
+		if(pzone && location == LOCATION_SZONE && (sequence == 0 || sequence == 4)) {
+			auto pzone_sequence = sequence == 0 ? 0 : 1;
+			if(!is_location_useable(playerid, LOCATION_PZONE, pzone_sequence))
+				return;
+		}
+		else
+			return;
 	if(pcard->is_extra_deck_monster() && (location & (LOCATION_HAND | LOCATION_DECK))) {
 		location = LOCATION_EXTRA;
 		pcard->sendto_param.position = POS_FACEDOWN_DEFENSE;
@@ -239,7 +245,13 @@ void field::remove_card(card* pcard) {
 }
 void field::move_card(uint8_t playerid, card* pcard, uint8_t location, uint8_t sequence, uint8_t pzone) {
 	if (!is_location_useable(playerid, location, sequence))
-		return;
+		if(pzone && location == LOCATION_SZONE && (sequence == 0 || sequence == 4)) {
+			auto pzone_sequence = sequence == 0 ? 0 : 1;
+			if(!is_location_useable(playerid, LOCATION_PZONE, pzone_sequence))
+				return;
+		}
+		else
+			return;
 	uint8_t preplayer = pcard->current.controler;
 	uint8_t presequence = pcard->current.sequence;
 	if(pcard->is_extra_deck_monster() && (location & (LOCATION_HAND | LOCATION_DECK))) {
@@ -594,6 +606,8 @@ int32_t field::is_location_useable(uint8_t playerid, uint32_t general_location, 
 			return FALSE;
 		if(flag & (0x100U << sequence))
 			return FALSE;
+		if(sequence == 0 || sequence == 4)
+			return FALSE;
 	} else if (general_location == LOCATION_FZONE) {
 		if (sequence >= 1)
 			return FALSE;
@@ -718,6 +732,8 @@ int32_t field::get_tofield_count(card* pcard, uint8_t playerid, uint8_t location
 		flag = (flag | ~zone) & 0x1f;
 	else
 		flag = ((flag >> 8) | ~zone) & 0x1f;
+	if(location == LOCATION_SZONE)
+		flag |= 0x11; // disable leftmost and rightmost zone
 	int32_t count = 5 - field_used_count[flag];
 	if(location == LOCATION_MZONE)
 		flag |= (1u << 5) | (1u << 6);
@@ -801,6 +817,7 @@ int32_t field::get_mzone_limit(uint8_t playerid, uint8_t uplayer, uint32_t reaso
 int32_t field::get_szone_limit(uint8_t playerid, uint8_t uplayer, uint32_t reason) {
 	uint32_t used_flag = player[playerid].used_location;
 	used_flag = (used_flag >> 8) & 0x1f;
+	used_flag |= 0x11; // disable leftmost and rightmost zone
 	effect_set eset;
 	if(uplayer < 2)
 		filter_player_effect(playerid, EFFECT_MAX_SZONE, &eset);

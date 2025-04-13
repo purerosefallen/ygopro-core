@@ -4778,7 +4778,7 @@ int32_t field::refresh_location_info(uint16_t step) {
 		int32_t val = peffect->get_value();
 		uint32_t dis_count = (val & 0xffff) - field_used_count[(val >> 16) & 0x1f];
 		uint32_t empty_count = 5 - field_used_count[szone_flag];
-		uint32_t flag = (szone_flag << 8) | 0xffffe0ff;
+		uint32_t flag = (szone_flag << 8) | 0xffffe0ff | 0x1100;
 		if(dis_count > empty_count)
 			dis_count = empty_count;
 		core.units.begin()->arg1 = dis_count;
