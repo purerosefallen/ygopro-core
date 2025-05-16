@@ -39,7 +39,16 @@ uint32_t read_card(uint32_t code, card_data* data) {
 		data->clear();
 		return 0;
 	}
-	return creader(code, data);
+	auto res = creader(code, data);
+	if(!(data->type & TYPE_TOKEN)) {
+		if(data->attack > 0) {
+			data->attack *= 10;
+		}
+		if(data->defense > 0) {
+			data->defense *= 10;
+		}
+	}
+	return res;
 }
 uint32_t handle_message(void* pduel, uint32_t message_type) {
 	return mhandler((intptr_t)pduel, message_type);
