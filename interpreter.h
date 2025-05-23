@@ -16,6 +16,7 @@
 #include <list>
 #include <vector>
 #include <cstdio>
+#include "LuaMemTracker.h"
 
 class card;
 struct card_data;
@@ -54,6 +55,7 @@ public:
 	int32_t call_depth;
 	int32_t disable_action_check;
 	int32_t preloaded;
+	LuaMemTracker* mem_tracker = nullptr;
 
 	explicit interpreter(duel* pd);
 	~interpreter();
@@ -99,5 +101,9 @@ public:
 #define COROUTINE_FINISH	1
 #define COROUTINE_YIELD		2
 #define COROUTINE_ERROR		3
+
+#ifndef YGOPRO_LUA_MEMORY_SIZE
+#define YGOPRO_LUA_MEMORY_SIZE 67108864 // 64 MB
+#endif
 
 #endif /* INTERPRETER_H_ */
