@@ -15,7 +15,7 @@ lua:
     - wget -O - https://cdn02.moecube.com:444/ygopro-build-materials/lua-5.4.4.tar.gz | tar zfx -
     - mv lua-5.4.4 lua
     - cp premake/lua.lua lua/premake5.lua
-    - wget -O - https://cdn01.moecube.com/ygopro-build-materials/sqlite-autoconf-3360000.tar.gz | tar zfx -
+    - wget -O - https://cdn02.moecube.com:444/ygopro-build-materials/sqlite-autoconf-3360000.tar.gz | tar zfx -
     - mv sqlite-autoconf-3360000 sqlite3
   artifacts:
     paths:
@@ -29,7 +29,7 @@ mat_windows:
   script:
     - apt update; apt -y install wget tar patch p7zip-full
     # premake5.exe
-    - wget https://cdn01.moecube.com/ygopro-build-materials/premake-5.0.0-beta5-windows.zip
+    - wget https://cdn02.moecube.com:444/ygopro-build-materials/premake-5.0.0-beta5-windows.zip
     - 7z x -y premake-5.0.0-beta5-windows.zip
   artifacts:
     paths:
@@ -41,7 +41,7 @@ mat_macos:
     - linux
   script:
     - apt update; apt -y install wget tar
-    - wget -O - https://cdn01.moecube.com/ygopro-build-materials/premake-5.0.0-beta5-macosx.tar.gz | tar zfx -
+    - wget -O - https://cdn02.moecube.com:444/ygopro-build-materials/premake-5.0.0-beta5-macosx.tar.gz | tar zfx -
     - chmod +x premake5
   artifacts:
     paths:
