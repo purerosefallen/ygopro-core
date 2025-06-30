@@ -228,6 +228,147 @@ int32_t scriptlib::duel_get_random_number(lua_State * L) {
 	lua_pushinteger(L, pduel->get_next_integer(min, max));
 	return 1;
 }
+int32_t scriptlib::duel_get_registry_value(lua_State* L) {
+	check_param_count(L, 1);
+
+	duel* pduel = interpreter::get_duel_info(L);
+
+	// 对参数 1 调用 tostring
+	lua_getglobal(L, "tostring");
+	lua_pushvalue(L, 1);
+	lua_call(L, 1, 1);  // 调用 tostring(key)
+	const char* key = lua_tostring(L, -1);
+	if (!key) {
+		lua_pop(L, 1);  // 清理 tostring 返回值
+		lua_pushnil(L); // 无效 key，返回 nil
+		return 1;
+	}
+
+	auto it = pduel->registry.find(key);
+	if (it != pduel->registry.end()) {
+		lua_pushstring(L, it->second.c_str());
+	} else {
+		lua_pushnil(L);
+	}
+
+	lua_remove(L, -2);  // 移除 key 的 tostring 结果，保持栈只返回一个结果
+	return 1;
+}
+int32_t scriptlib::duel_set_registry_value(lua_State* L) {
+	check_param_count(L, 2);
+
+	duel* pduel = interpreter::get_duel_info(L);
+
+	// 对参数 1（key）调用 tostring
+	lua_getglobal(L, "tostring");
+	lua_pushvalue(L, 1);
+	lua_call(L, 1, 1);  // 调用 tostring(key)
+	const char* key = lua_tostring(L, -1);  // key 字符串结果在栈顶
+
+	if (!key) {
+		lua_pop(L, 1);  // 清理 key tostring 结果
+		return luaL_error(L, "invalid key for registry");
+	}
+
+	if (lua_isnil(L, 2)) {
+		// 删除 key
+		pduel->registry.erase(key);
+		lua_pop(L, 1);  // 清理 key
+		return 0;
+	}
+
+	// 对参数 2（value）调用 tostring
+	lua_getglobal(L, "tostring");
+	lua_pushvalue(L, 2);
+	lua_call(L, 1, 1);  // 调用 tostring(value)
+	const char* value = lua_tostring(L, -1);  // value 字符串在栈顶
+
+	if (value) {
+		pduel->registry[key] = value;
+	}
+
+	lua_pop(L, 2);  // 清理 key 和 value 的 tostring 结果
+
+	return 0;
+}
+int32_t scriptlib::duel_get_registry_keys(lua_State* L) {
+	duel* pduel = interpreter::get_duel_info(L);
+
+	if (pduel->registry.empty()) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	int count = 0;
+	for (const auto& pair : pduel->registry) {
+		lua_pushstring(L, pair.first.c_str());
+		++count;
+	}
+
+	return count;  // 返回 n 个字符串（key）
+}
+int32_t scriptlib::duel_get_registry(lua_State* L) {
+	duel* pduel = interpreter::get_duel_info(L);
+	lua_newtable(L);  // 创建返回表
+
+	for (const auto& pair : pduel->registry) {
+		lua_pushstring(L, pair.first.c_str());
+		lua_pushstring(L, pair.second.c_str());
+		lua_settable(L, -3);  // table[key] = value
+	}
+
+	return 1;  // 返回这个 table
+}
+int32_t scriptlib::duel_set_registry(lua_State* L) {
+	check_param_count(L, 1);  // 至少要 table 参数
+
+	if (!lua_istable(L, 1)) {
+		return luaL_error(L, "first argument must be a table");
+	}
+
+	bool override = false;
+	if (lua_gettop(L) >= 2 && lua_isboolean(L, 2)) {
+		override = lua_toboolean(L, 2);
+	}
+
+	duel* pduel = interpreter::get_duel_info(L);
+	if (override) {
+		pduel->registry.clear();
+	}
+
+	// 遍历 Lua 表
+	lua_pushnil(L);  // 初始 key for lua_next
+	while (lua_next(L, 1)) {
+		// 栈: [-1]=value, [-2]=key
+
+		// 对 key 调用 tostring
+		lua_getglobal(L, "tostring");
+		lua_pushvalue(L, -3);  // key
+		lua_call(L, 1, 1);     // -> [tostring_key]
+		const char* kstr = lua_tostring(L, -1);
+		lua_remove(L, -1);     // pop tostring_key
+
+		// 对 value 调用 tostring
+		lua_getglobal(L, "tostring");
+		lua_pushvalue(L, -2);  // value
+		lua_call(L, 1, 1);     // -> [tostring_value]
+		const char* vstr = lua_tostring(L, -1);
+		lua_remove(L, -1);     // pop tostring_value
+
+		if (kstr && vstr) {
+			pduel->registry[kstr] = vstr;
+		}
+
+		lua_pop(L, 1);  // 移除 value，保留 key 以继续迭代
+	}
+
+	return 0;
+}
+int32_t scriptlib::duel_clear_registry(lua_State *L) {
+	duel* pduel = interpreter::get_duel_info(L);
+	pduel->registry.clear();
+	return 0;
+}
 
 int32_t scriptlib::duel_enable_global_flag(lua_State *L) {
 	check_param_count(L, 1);
@@ -401,7 +542,7 @@ int32_t scriptlib::duel_get_flag_effect_label(lua_State *L) {
 	}
 	for(effect_set::size_type i = 0; i < eset.size(); ++i)
 		lua_pushinteger(L, eset[i]->label.size() ? eset[i]->label[0] : 0);
-	return eset.size();
+	return (int32_t)eset.size();
 }
 int32_t scriptlib::duel_destroy(lua_State *L) {
 	check_action_permission(L);
@@ -1283,8 +1424,12 @@ int32_t scriptlib::duel_confirm_cards(lua_State *L) {
 		pduel = pgroup->pduel;
 	} else
 		return luaL_error(L, "Parameter %d should be \"Card\" or \"Group\".", 2);
+	uint8_t skip_panel = 0;
+	if(lua_gettop(L) >= 3)
+		skip_panel = lua_toboolean(L, 3);
 	pduel->write_buffer8(MSG_CONFIRM_CARDS);
 	pduel->write_buffer8(playerid);
+	pduel->write_buffer8(skip_panel);
 	if(pcard) {
 		pduel->write_buffer8(1);
 		pduel->write_buffer32(pcard->data.code);
@@ -5105,6 +5250,12 @@ static const struct luaL_Reg duellib[] = {
 	{ "ResetTimeLimit", scriptlib::duel_reset_time_limit },
 	{ "SetSummonCancelable", scriptlib::duel_set_summon_cancelable },
 	{ "GetRandomNumber", scriptlib::duel_get_random_number },
+	{ "GetRegistryValue", scriptlib::duel_get_registry_value },
+	{ "SetRegistryValue", scriptlib::duel_set_registry_value },
+	{ "GetRegistryKeys", scriptlib::duel_get_registry_keys },
+	{ "SetRegistry", scriptlib::duel_set_registry },
+	{ "GetRegistry", scriptlib::duel_get_registry },
+	{ "ClearRegistry", scriptlib::duel_clear_registry },
 
 	{ "EnableGlobalFlag", scriptlib::duel_enable_global_flag },
 	{ "GetLP", scriptlib::duel_get_lp },

@@ -15,6 +15,7 @@
 #include <unordered_set>
 #include <cstring>
 #include <vector>
+#include <unordered_map>
 
 class card;
 class group;
@@ -26,18 +27,22 @@ using card_set = std::set<card*, card_sort>;
 
 class duel {
 public:
-	char strbuffer[256];
-	std::vector<byte> message_buffer;
+	char strbuffer[256]{};
+	int32_t rng_version{ 2 };
 	interpreter* lua;
 	field* game_field;
-	mt19937 random;
+	mtrandom random;
+
+	std::vector<byte> message_buffer;
 	std::unordered_set<card*> cards;
 	std::unordered_set<card*> assumes;
 	std::unordered_set<group*> groups;
 	std::unordered_set<group*> sgroups;
 	std::unordered_set<effect*> effects;
 	std::unordered_set<effect*> uncopy;
-	
+
+	std::unordered_map<std::string, std::string> registry;
+
 	duel();
 	~duel();
 	void clear();
