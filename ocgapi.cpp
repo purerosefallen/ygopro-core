@@ -2,7 +2,7 @@
  * interface.cpp
  *
  *  Created on: 2010-5-2
- *      Author: Argon
+ *	  Author: Argon
  */
 #include <cstdio>
 #include <cstring>
@@ -16,19 +16,25 @@
 #include "interpreter.h"
 #include "buffer.h"
 
+static uint32_t default_card_reader(uint32_t code, card_data* data) {
+	return 0;
+}
+static uint32_t default_message_handler(intptr_t pduel, uint32_t message_type) {
+	return 0;
+}
 static script_reader sreader = default_script_reader;
 static card_reader creader = default_card_reader;
 static message_handler mhandler = default_message_handler;
-static byte buffer[0x20000];
+static byte buffer[0x100000];
 static std::set<duel*> duel_set;
 
-extern "C" DECL_DLLEXPORT void set_script_reader(script_reader f) {
+OCGCORE_API void set_script_reader(script_reader f) {
 	sreader = f;
 }
-extern "C" DECL_DLLEXPORT void set_card_reader(card_reader f) {
+OCGCORE_API void set_card_reader(card_reader f) {
 	creader = f;
 }
-extern "C" DECL_DLLEXPORT void set_message_handler(message_handler f) {
+OCGCORE_API void set_message_handler(message_handler f) {
 	mhandler = f;
 }
 byte* read_script(const char* script_name, int* len) {
@@ -53,7 +59,7 @@ uint32_t read_card(uint32_t code, card_data* data) {
 uint32_t handle_message(void* pduel, uint32_t message_type) {
 	return mhandler((intptr_t)pduel, message_type);
 }
-byte* default_script_reader(const char* script_name, int* slen) {
+OCGCORE_API byte* default_script_reader(const char* script_name, int* slen) {
 	FILE *fp;
 	fp = std::fopen(script_name, "rb");
 	if (!fp)
@@ -65,20 +71,23 @@ byte* default_script_reader(const char* script_name, int* slen) {
 	*slen = (int)len;
 	return buffer;
 }
-uint32_t default_card_reader(uint32_t code, card_data* data) {
-	return 0;
-}
-uint32_t default_message_handler(intptr_t pduel, uint32_t message_type) {
-	return 0;
-}
-extern "C" DECL_DLLEXPORT intptr_t create_duel(uint_fast32_t seed) {
+OCGCORE_API intptr_t create_duel(uint_fast32_t seed) {
 	duel* pduel = new duel();
 	duel_set.insert(pduel);
-	pduel->random.reset(seed);
+	pduel->random.seed(seed);
+	pduel->rng_version = 1;
 	pduel->lua->preloaded = FALSE;
 	return (intptr_t)pduel;
 }
-extern "C" DECL_DLLEXPORT void start_duel(intptr_t pduel, uint32_t options) {
+OCGCORE_API intptr_t create_duel_v2(uint32_t seed_sequence[]) {
+	duel* pduel = new duel();
+	duel_set.insert(pduel);
+	pduel->random.seed(seed_sequence, SEED_COUNT);
+	pduel->rng_version = 2;
+	pduel->lua->preloaded = FALSE;
+	return (intptr_t)pduel;
+}
+OCGCORE_API void start_duel(intptr_t pduel, uint32_t options) {
 	duel* pd = (duel*)pduel;
 	if(!pd->lua->preloaded) {
 		pd->lua->preloaded = TRUE;
@@ -127,14 +136,14 @@ extern "C" DECL_DLLEXPORT void start_duel(intptr_t pduel, uint32_t options) {
 	}
 	pd->game_field->add_process(PROCESSOR_TURN, 0, 0, 0, 0, 0);
 }
-extern "C" DECL_DLLEXPORT void end_duel(intptr_t pduel) {
+OCGCORE_API void end_duel(intptr_t pduel) {
 	duel* pd = (duel*)pduel;
 	if(duel_set.count(pd)) {
 		duel_set.erase(pd);
 		delete pd;
 	}
 }
-extern "C" DECL_DLLEXPORT void set_player_info(intptr_t pduel, int32_t playerid, int32_t lp, int32_t startcount, int32_t drawcount) {
+OCGCORE_API void set_player_info(intptr_t pduel, int32_t playerid, int32_t lp, int32_t startcount, int32_t drawcount) {
 	if (!check_playerid(playerid))
 		return;
 	duel* pd = (duel*)pduel;
@@ -145,17 +154,17 @@ extern "C" DECL_DLLEXPORT void set_player_info(intptr_t pduel, int32_t playerid,
 	if(drawcount >= 0)
 		pd->game_field->player[playerid].draw_count = drawcount;
 }
-extern "C" DECL_DLLEXPORT void get_log_message(intptr_t pduel, char* buf) {
+OCGCORE_API void get_log_message(intptr_t pduel, char* buf) {
 	duel* pd = (duel*)pduel;
-	buf[0] = '\0';
-	std::strncat(buf, pd->strbuffer, sizeof pd->strbuffer - 1);
+	std::strncpy(buf, pd->strbuffer, sizeof pd->strbuffer - 1);
+	buf[sizeof pd->strbuffer - 1] = 0;
 }
-extern "C" DECL_DLLEXPORT int32_t get_message(intptr_t pduel, byte* buf) {
+OCGCORE_API int32_t get_message(intptr_t pduel, byte* buf) {
 	int32_t len = ((duel*)pduel)->read_buffer(buf);
 	((duel*)pduel)->clear_buffer();
 	return len;
 }
-extern "C" DECL_DLLEXPORT uint32_t process(intptr_t pduel) {
+OCGCORE_API uint32_t process(intptr_t pduel) {
 	duel* pd = (duel*)pduel;
 	uint32_t result = 0; 
 	do {
@@ -163,7 +172,7 @@ extern "C" DECL_DLLEXPORT uint32_t process(intptr_t pduel) {
 	} while ((result & PROCESSOR_BUFFER_LEN) == 0 && (result & PROCESSOR_FLAG) == 0);
 	return result;
 }
-extern "C" DECL_DLLEXPORT void new_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t playerid, uint8_t location, uint8_t sequence, uint8_t position) {
+OCGCORE_API void new_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t playerid, uint8_t location, uint8_t sequence, uint8_t position) {
 	if (!check_playerid(owner) || !check_playerid(playerid))
 		return;
 	duel* ptduel = (duel*)pduel;
@@ -185,7 +194,7 @@ extern "C" DECL_DLLEXPORT void new_card(intptr_t pduel, uint32_t code, uint8_t o
 		}
 	}
 }
-extern "C" DECL_DLLEXPORT void new_tag_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t location) {
+OCGCORE_API void new_tag_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t location) {
 	duel* ptduel = (duel*)pduel;
 	if(owner > 1 || !(location & (LOCATION_DECK | LOCATION_EXTRA)))
 		return;
@@ -214,7 +223,7 @@ extern "C" DECL_DLLEXPORT void new_tag_card(intptr_t pduel, uint32_t code, uint8
 * @param buf int32_t array
 * @return buffer length in bytes
 */
-extern "C" DECL_DLLEXPORT int32_t query_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint8_t sequence, int32_t query_flag, byte* buf, int32_t use_cache) {
+OCGCORE_API int32_t query_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint8_t sequence, int32_t query_flag, byte* buf, int32_t use_cache) {
 	if (!check_playerid(playerid))
 		return LEN_FAIL;
 	duel* ptduel = (duel*)pduel;
@@ -248,7 +257,7 @@ extern "C" DECL_DLLEXPORT int32_t query_card(intptr_t pduel, uint8_t playerid, u
 		return LEN_EMPTY;
 	}
 }
-extern "C" DECL_DLLEXPORT int32_t query_field_count(intptr_t pduel, uint8_t playerid, uint8_t location) {
+OCGCORE_API int32_t query_field_count(intptr_t pduel, uint8_t playerid, uint8_t location) {
 	duel* ptduel = (duel*)pduel;
 	if (!check_playerid(playerid))
 		return 0;
@@ -279,7 +288,7 @@ extern "C" DECL_DLLEXPORT int32_t query_field_count(intptr_t pduel, uint8_t play
 	}
 	return 0;
 }
-extern "C" DECL_DLLEXPORT int32_t query_field_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint32_t query_flag, byte* buf, int32_t use_cache) {
+OCGCORE_API int32_t query_field_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint32_t query_flag, byte* buf, int32_t use_cache) {
 	if (!check_playerid(playerid))
 		return LEN_FAIL;
 	duel* ptduel = (duel*)pduel;
@@ -326,7 +335,7 @@ extern "C" DECL_DLLEXPORT int32_t query_field_card(intptr_t pduel, uint8_t playe
 	}
 	return (int32_t)(p - buf);
 }
-extern "C" DECL_DLLEXPORT int32_t query_field_info(intptr_t pduel, byte* buf) {
+OCGCORE_API int32_t query_field_info(intptr_t pduel, byte* buf) {
 	duel* ptduel = (duel*)pduel;
 	byte* p = buf;
 	*p++ = MSG_RELOAD_FIELD;
@@ -370,12 +379,111 @@ extern "C" DECL_DLLEXPORT int32_t query_field_info(intptr_t pduel, byte* buf) {
 	}
 	return (int32_t)(p - buf);
 }
-extern "C" DECL_DLLEXPORT void set_responsei(intptr_t pduel, int32_t value) {
+OCGCORE_API void set_responsei(intptr_t pduel, int32_t value) {
 	((duel*)pduel)->set_responsei(value);
 }
-extern "C" DECL_DLLEXPORT void set_responseb(intptr_t pduel, byte* buf) {
+OCGCORE_API void set_responseb(intptr_t pduel, byte* buf) {
 	((duel*)pduel)->set_responseb(buf);
 }
-extern "C" DECL_DLLEXPORT int32_t preload_script(intptr_t pduel, const char* script_name) {
+OCGCORE_API int32_t preload_script(intptr_t pduel, const char* script_name) {
 	return ((duel*)pduel)->lua->load_script(script_name);
+}
+OCGCORE_API int32_t get_registry_value(intptr_t pduel, const char* key, byte* out_buf) {
+	if (!pduel || !key || !out_buf) return -1;
+
+	duel* d = (duel*)pduel;
+	auto it = d->registry.find(key);
+	if (it == d->registry.end())
+		return -1;
+
+	const std::string& val = it->second;
+	std::memcpy(out_buf, val.c_str(), val.size());
+	return static_cast<int32_t>(val.size());
+}
+OCGCORE_API void set_registry_value(intptr_t pduel, const char* key, const char* value) {
+	if (!pduel || !key) return;
+	duel* d = (duel*)pduel;
+	if (value) {
+		d->registry[key] = value;
+	} else {
+		d->registry.erase(key);
+	}
+}
+OCGCORE_API int32_t get_registry_keys(intptr_t pduel, byte* out_buf) {
+	if (!pduel || !out_buf) return -1;
+
+	duel* d = (duel*)pduel;
+	byte* ptr = out_buf;
+
+	for (const auto& pair : d->registry) {
+		const std::string& key = pair.first;
+		uint16_t len = static_cast<uint16_t>(std::min<size_t>(key.size(), 0xFFFF));
+
+		// 写入长度（2字节，小端序）
+		buffer_write(ptr, len);
+
+		std::memcpy(ptr, key.data(), len);
+		ptr += len;
+	}
+
+	return ptr - out_buf;
+}
+OCGCORE_API void clear_registry(intptr_t pduel) {
+	if (!pduel) return;
+	duel* d = (duel*)pduel;
+	d->registry.clear();
+}
+
+OCGCORE_API int32_t dump_registry(intptr_t pduel, byte* out_buf) {
+	if (!pduel || !out_buf) return -1;
+
+	duel* d = (duel*)pduel;
+	byte* ptr = out_buf;
+
+	for (const auto& pair : d->registry) {
+		const std::string& key = pair.first;
+		const std::string& value = pair.second;
+
+		uint16_t key_len = static_cast<uint16_t>(std::min<size_t>(key.size(), 0xFFFF));
+		uint16_t val_len = static_cast<uint16_t>(std::min<size_t>(value.size(), 0xFFFF));
+
+		// 写入 key_len 和 val_len（每次调用后 ptr 自动推进）
+		buffer_write(ptr, key_len);
+		buffer_write(ptr, val_len);
+
+		// 写入 key 内容
+		std::memcpy(ptr, key.data(), key_len);
+		ptr += key_len;
+
+		// 写入 value 内容
+		std::memcpy(ptr, value.data(), val_len);
+		ptr += val_len;
+	}
+
+	return ptr - out_buf;  // 返回写入的总字节数
+}
+OCGCORE_API void load_registry(intptr_t pduel, const byte* in_buf, int32_t in_len) {
+	if (!pduel || !in_buf || in_len <= 0) return;
+
+	duel* d = (duel*)pduel;
+
+	byte* ptr = const_cast<byte*>(in_buf);  // buffer_read 要求非 const
+	byte* end = ptr + in_len;
+
+	while (ptr + 4 <= end) {  // 至少要读取 key_len 和 val_len（2 + 2 字节）
+		uint16_t key_len = buffer_read<uint16_t>(ptr);
+		uint16_t val_len = buffer_read<uint16_t>(ptr);
+
+		if (ptr + key_len + val_len > end) {
+			break;  // 数据不完整，退出
+		}
+
+		std::string key(reinterpret_cast<const char*>(ptr), key_len);
+		ptr += key_len;
+
+		std::string value(reinterpret_cast<const char*>(ptr), val_len);
+		ptr += val_len;
+
+		d->registry[std::move(key)] = std::move(value);
+	}
 }

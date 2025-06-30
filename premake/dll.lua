@@ -48,11 +48,7 @@ workspace "ocgcoredll"
         startproject "ocgcore"
 
     filter { "configurations:Release", "action:vs*" }
-        if linktimeoptimization then
-            linktimeoptimization "On"
-        else
-            flags { "LinkTimeOptimization" }
-        end
+        linktimeoptimization "On"
         staticruntime "On"
         disablewarnings { "4334" }
 
@@ -84,7 +80,6 @@ include(LUA_DIR)
 project "ocgcore"
 
     kind "SharedLib"
-    cppdialect "C++14"
 
     files { "*.cpp", "*.h" }
     links { "lua" }
@@ -93,7 +88,7 @@ project "ocgcore"
 
     filter "system:emscripten"
         targetextension ".wasm"
-        linkoptions { "-s MODULARIZE=1", "-s EXPORT_NAME=\"createOcgcore\"", "--no-entry", "-s EXPORTED_FUNCTIONS=[\"_set_script_reader\",\"_set_card_reader\",\"_set_message_handler\",\"_create_duel\",\"_start_duel\",\"_end_duel\",\"_set_player_info\",\"_get_log_message\",\"_get_message\",\"_process\",\"_new_card\",\"_new_tag_card\",\"_query_card\",\"_query_field_count\",\"_query_field_card\",\"_query_field_info\",\"_set_responsei\",\"_set_responseb\",\"_preload_script\"]", "-s ENVIRONMENT=web,node", "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", "-s ALLOW_TABLE_GROWTH=1", "-s ALLOW_MEMORY_GROWTH=1", "-o ../wasm/libocgcore.js" }
+        linkoptions { "-s MODULARIZE=1", "-s EXPORT_NAME=\"createOcgcore\"", "--no-entry", "-s ENVIRONMENT=web,node", "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", "-s ALLOW_TABLE_GROWTH=1", "-s ALLOW_MEMORY_GROWTH=1", "-o ../wasm/libocgcore.js" }
 
 if not WASM and SQLITE3_DIR and os.isdir(SQLITE3_DIR) then
 project "sqlite3"
