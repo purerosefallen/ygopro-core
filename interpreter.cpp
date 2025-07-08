@@ -14,6 +14,10 @@
 #include "ocgapi.h"
 #include "interpreter.h"
 
+#define inject_global(name)               \
+    lua_pushinteger(lua_state, name);     \
+    lua_setglobal(lua_state, #name);
+
 interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_State* tmp_L = luaL_newstate();  // 只是为了拿默认 alloc
 	lua_Alloc raw_alloc;
@@ -58,92 +62,62 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	load_script("./script/constant.lua");
 	load_script("./script/utility.lua");
 	load_script("./script/procedure.lua");
-	//load kpro constant
-	//card data constants
-	lua_pushinteger(lua_state, CARDDATA_CODE);
-	lua_setglobal(lua_state, "CARDDATA_CODE");
-	lua_pushinteger(lua_state, CARDDATA_ALIAS);
-	lua_setglobal(lua_state, "CARDDATA_ALIAS");
-	lua_pushinteger(lua_state, CARDDATA_SETCODE);
-	lua_setglobal(lua_state, "CARDDATA_SETCODE");
-	lua_pushinteger(lua_state, CARDDATA_TYPE);
-	lua_setglobal(lua_state, "CARDDATA_TYPE");
-	lua_pushinteger(lua_state, CARDDATA_LEVEL);
-	lua_setglobal(lua_state, "CARDDATA_LEVEL");
-	lua_pushinteger(lua_state, CARDDATA_ATTRIBUTE);
-	lua_setglobal(lua_state, "CARDDATA_ATTRIBUTE");
-	lua_pushinteger(lua_state, CARDDATA_ATTRIBUTE);
-	lua_setglobal(lua_state, "CARDDATA_ATTRIBUTE");
-	lua_pushinteger(lua_state, CARDDATA_RACE);
-	lua_setglobal(lua_state, "CARDDATA_RACE");
-	lua_pushinteger(lua_state, CARDDATA_ATTACK);
-	lua_setglobal(lua_state, "CARDDATA_ATTACK");
-	lua_pushinteger(lua_state, CARDDATA_DEFENSE);
-	lua_setglobal(lua_state, "CARDDATA_DEFENSE");
-	lua_pushinteger(lua_state, CARDDATA_LSCALE);
-	lua_setglobal(lua_state, "CARDDATA_LSCALE");
-	lua_pushinteger(lua_state, CARDDATA_RSCALE);
-	lua_setglobal(lua_state, "CARDDATA_RSCALE");
-	lua_pushinteger(lua_state, CARDDATA_LINK_MARKER);
-	lua_setglobal(lua_state, "CARDDATA_LINK_MARKER");
-	//effect flag2s
-	lua_pushinteger(lua_state, EFFECT_FLAG2_SPOSITCH);
-	lua_setglobal(lua_state, "EFFECT_FLAG2_SPOSITCH");
-	lua_pushinteger(lua_state, EFFECT_FLAG2_AVAILABLE_BD);
-	lua_setglobal(lua_state, "EFFECT_FLAG2_AVAILABLE_BD");
-	lua_pushinteger(lua_state, EFFECT_FLAG2_ACTIVATE_MONSTER_SZONE);
-	lua_setglobal(lua_state, "EFFECT_FLAG2_ACTIVATE_MONSTER_SZONE");
-	//effects
-	lua_pushinteger(lua_state, EFFECT_CHANGE_LINK_MARKER_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_CHANGE_LINK_MARKER_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_ADD_LINK_MARKER_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_ADD_LINK_MARKER_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_REMOVE_LINK_MARKER_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_REMOVE_LINK_MARKER_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_CANNOT_LOSE_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_CANNOT_LOSE_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_EXTRA_TOMAIN_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_EXTRA_TOMAIN_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_OVERLAY_REMOVE_COST_CHANGE_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_OVERLAY_REMOVE_COST_CHANGE_KOISHI");
+	// load kpro constant
+	// card data constants
+	inject_global(CARDDATA_CODE);
+	inject_global(CARDDATA_ALIAS);
+	inject_global(CARDDATA_SETCODE);
+	inject_global(CARDDATA_TYPE);
+	inject_global(CARDDATA_LEVEL);
+	inject_global(CARDDATA_ATTRIBUTE);
+	inject_global(CARDDATA_ATTRIBUTE);
+	inject_global(CARDDATA_RACE);
+	inject_global(CARDDATA_ATTACK);
+	inject_global(CARDDATA_DEFENSE);
+	inject_global(CARDDATA_LSCALE);
+	inject_global(CARDDATA_RSCALE);
+	inject_global(CARDDATA_LINK_MARKER);
+
+	// effect flag2s
+	inject_global(EFFECT_FLAG2_SPOSITCH);
+	inject_global(EFFECT_FLAG2_AVAILABLE_BD);
+	inject_global(EFFECT_FLAG2_ACTIVATE_MONSTER_SZONE);
+
+	// effects
+	inject_global(EFFECT_CHANGE_LINK_MARKER_KOISHI);
+	inject_global(EFFECT_ADD_LINK_MARKER_KOISHI);
+	inject_global(EFFECT_REMOVE_LINK_MARKER_KOISHI);
+	inject_global(EFFECT_CANNOT_LOSE_KOISHI);
+	inject_global(EFFECT_EXTRA_TOMAIN_KOISHI);
+	inject_global(EFFECT_OVERLAY_REMOVE_COST_CHANGE_KOISHI);
+	inject_global(EFFECT_SYNCHRO_LEVEL_EX);
 	lua_pushinteger(lua_state, EFFECT_SYNCHRO_LEVEL_EX);
 	lua_setglobal(lua_state, "EFFECT_ALLOW_SYNCHRO_KOISHI"); // for compat only
-	// lua_pushinteger(lua_state, EFFECT_MINIATURE_GARDEN_GIRL);
-	// lua_setglobal(lua_state, "EFFECT_MINIATURE_GARDEN_GIRL");
-	lua_pushinteger(lua_state, EFFECT_ADD_SUMMON_TYPE_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_ADD_SUMMON_TYPE_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_REMOVE_SUMMON_TYPE_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_REMOVE_SUMMON_TYPE_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_CHANGE_SUMMON_TYPE_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_CHANGE_SUMMON_TYPE_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_CHANGE_SUMMON_LOCATION_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_CHANGE_SUMMON_LOCATION_KOISHI");
-	lua_pushinteger(lua_state, EFFECT_LINK_SPELL_KOISHI);
-	lua_setglobal(lua_state, "EFFECT_LINK_SPELL_KOISHI");
 
-	lua_pushinteger(lua_state, GETEFFECT_ALL);
-	lua_setglobal(lua_state, "GETEFFECT_ALL");
-	lua_pushinteger(lua_state, GETEFFECT_INITIAL);
-	lua_setglobal(lua_state, "GETEFFECT_INITIAL");
-	lua_pushinteger(lua_state, GETEFFECT_COPY);
-	lua_setglobal(lua_state, "GETEFFECT_COPY");
-	lua_pushinteger(lua_state, GETEFFECT_GAIN);
-	lua_setglobal(lua_state, "GETEFFECT_GAIN");
-	lua_pushinteger(lua_state, GETEFFECT_GRANT);
-	lua_setglobal(lua_state, "GETEFFECT_GRANT");
+	// inject_global(EFFECT_MINIATURE_GARDEN_GIRL); // temporarily disabled
+	inject_global(EFFECT_ADD_SUMMON_TYPE_KOISHI);
+	inject_global(EFFECT_REMOVE_SUMMON_TYPE_KOISHI);
+	inject_global(EFFECT_CHANGE_SUMMON_TYPE_KOISHI);
+	inject_global(EFFECT_CHANGE_SUMMON_LOCATION_KOISHI);
+	inject_global(EFFECT_LINK_SPELL_KOISHI);
 
-	// lua_pushinteger(lua_state, EFFECT_SEA_PULSE);
-	// lua_setglobal(lua_state, "EFFECT_SEA_PULSE");
-	lua_pushinteger(lua_state, EFFECT_MAP_OF_HEAVEN);
-	lua_setglobal(lua_state, "EFFECT_MAP_OF_HEAVEN");
+	inject_global(GETEFFECT_ALL);
+	inject_global(GETEFFECT_INITIAL);
+	inject_global(GETEFFECT_COPY);
+	inject_global(GETEFFECT_GAIN);
+	inject_global(GETEFFECT_GRANT);
 
-	//music hints
-	lua_pushinteger(lua_state, HINT_MUSIC);
-	lua_setglobal(lua_state, "HINT_MUSIC");
-	lua_pushinteger(lua_state, HINT_SOUND);
-	lua_setglobal(lua_state, "HINT_SOUND");
-	lua_pushinteger(lua_state, HINT_MUSIC_OGG);
-	lua_setglobal(lua_state, "HINT_MUSIC_OGG");
+	// inject_global(EFFECT_SEA_PULSE); // temporarily disabled
+	inject_global(EFFECT_MAP_OF_HEAVEN);
+
+	// music hints
+	inject_global(HINT_MUSIC);
+	inject_global(HINT_SOUND);
+	inject_global(HINT_MUSIC_OGG);
+
+	// effect codes
+	inject_global(EFFECT_COUNT_CODE_MATCH);
+
 	//detect operating system
 #ifdef _WIN32
 	lua_pushboolean(lua_state, 1);
