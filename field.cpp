@@ -1353,9 +1353,29 @@ void field::reset_chain() {
 			(*rm)->handler->remove_effect((*rm));
 	}
 }
+std::string get_effect_count_code_match_key(uint32_t code, int32_t playerid) {
+	// key = effect_count_code_match_{code}_{playerid}
+	return "effect_count_code_match_" + std::to_string(code) + "_" + std::to_string(playerid);
+}
+auto safe_stoi(const std::string& str) {
+	try {
+		return std::stoi(str);
+	} catch (...) {
+		return 0;
+	}
+}
 void field::add_effect_code(uint32_t code, int32_t playerid) {
 	if (playerid < 0 || playerid > PLAYER_NONE)
 		return;
+	if(code & EFFECT_COUNT_CODE_MATCH) {
+		auto key = get_effect_count_code_match_key(code, playerid);
+		int32_t count = 0;
+		auto it = pduel->registry.find(key);
+		if (it != pduel->registry.end())
+			count = safe_stoi(it->second);
+		pduel->registry[key] = std::to_string(count + 1);
+		return;
+	}
 	auto count_map = &core.effect_count_code[playerid];
 	if (code & EFFECT_COUNT_CODE_DUEL)
 		count_map = &core.effect_count_code_duel[playerid];
@@ -1366,6 +1386,15 @@ void field::add_effect_code(uint32_t code, int32_t playerid) {
 int32_t field::get_effect_code(uint32_t code, int32_t playerid) {
 	if (playerid < 0 || playerid > PLAYER_NONE)
 		return 0;
+	if(code & EFFECT_COUNT_CODE_MATCH) {
+		auto key = get_effect_count_code_match_key(code, playerid);
+		auto it = pduel->registry.find(key);
+		if (it != pduel->registry.end()) {
+			return safe_stoi(it->second);
+		} else {
+			return 0;
+		}
+	}
 	auto count_map = &core.effect_count_code[playerid];
 	if(code & EFFECT_COUNT_CODE_DUEL)
 		count_map = &core.effect_count_code_duel[playerid];
@@ -1379,6 +1408,18 @@ int32_t field::get_effect_code(uint32_t code, int32_t playerid) {
 void field::dec_effect_code(uint32_t code, int32_t playerid) {
 	if (playerid < 0 || playerid > PLAYER_NONE)
 		return;
+	if(code & EFFECT_COUNT_CODE_MATCH) {
+		auto key = get_effect_count_code_match_key(code, playerid);
+		auto it = pduel->registry.find(key);
+		if (it != pduel->registry.end()) {
+			auto count = safe_stoi(it->second);
+			if (count > 1)
+				pduel->registry[key] = std::to_string(count - 1);
+			else
+				pduel->registry.erase(key);
+		}
+		return;
+	}
 	auto count_map = &core.effect_count_code[playerid];
 	if (code & EFFECT_COUNT_CODE_DUEL)
 		count_map = &core.effect_count_code_duel[playerid];
