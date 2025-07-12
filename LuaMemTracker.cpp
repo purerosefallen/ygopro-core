@@ -1,7 +1,12 @@
 #include "LuaMemTracker.h"
+#include <lauxlib.h>
 
-LuaMemTracker::LuaMemTracker(lua_Alloc alloc_func, void* ud, size_t mem_limit)
-	: real_alloc(alloc_func), real_ud(ud), limit(mem_limit) {
+LuaMemTracker::LuaMemTracker(size_t mem_limit)
+		: limit(mem_limit) {
+	lua_State* tmp_L = luaL_newstate();  // get default alloc
+	real_alloc = lua_getallocf(tmp_L, &real_ud);
+	lua_close(tmp_L);
+
 #ifdef YGOPRO_LOG_LUA_MEMORY_SIZE
 	time_t now = time(nullptr);
 	char filename[64];

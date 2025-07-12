@@ -15,14 +15,7 @@
 #include "interpreter.h"
 
 interpreter::interpreter(duel* pd): coroutines(256) {
-	lua_State* tmp_L = luaL_newstate();  // 只是为了拿默认 alloc
-	lua_Alloc raw_alloc;
-	void* raw_ud;
-	raw_alloc = lua_getallocf(tmp_L, &raw_ud);
-	lua_close(tmp_L);
-
-	mem_tracker = new LuaMemTracker(raw_alloc, raw_ud, YGOPRO_LUA_MEMORY_SIZE);
-
+	mem_tracker = new LuaMemTracker(YGOPRO_LUA_MEMORY_SIZE);
 	lua_state = lua_newstate(LuaMemTracker::AllocThunk, mem_tracker);
 	current_state = lua_state;
 	pduel = pd;
