@@ -70,7 +70,7 @@ workspace "ocgcoredll"
         linkoptions { "-static-libstdc++", "-static-libgcc" }
 
     filter "system:emscripten"
-        defines { "LUA_USE_LONGJMP", "LUA_USE_C89" }
+        defines { "LUA_USE_C89" }
         pic "On"
 
 filter {}
