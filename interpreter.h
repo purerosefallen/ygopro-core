@@ -48,6 +48,7 @@ public:
 	char msgbuf[64];
 	lua_State* lua_state;
 	lua_State* current_state;
+	LuaMemTracker* mem_tracker;
 	param_list params;
 	param_list resumes;
 	coroutine_map coroutines;
