@@ -56,7 +56,6 @@ mat_macos:
   variables:
     PREMAKE_OS: linux
     BUILD_TYPE: x64
-    DIST_PATH: build/bin/x64/Release
     PREMAKE5_PATH: premake5
   script:
     - ln -sf premake/dll.lua .
@@ -65,8 +64,8 @@ mat_macos:
     - make config=release_${BUILD_TYPE} -j$(nproc)
     - cd ..
     - mkdir -p dist/$BUILD_TYPE
-    - cp $DIST_PATH/libocgcore.* dist/$BUILD_TYPE/
-    - cp $DIST_PATH/libsqlite3.* dist/$BUILD_TYPE/ || true
+    - cp build/bin/$BUILD_TYPE/Release/libocgcore.* dist/$BUILD_TYPE/
+    - cp build/bin/$BUILD_TYPE/Release/libsqlite3.* dist/$BUILD_TYPE/ || true
   artifacts:
     paths:
       - dist
@@ -78,7 +77,6 @@ build_linux_x32:
   extends: .build_unix
   variables:
     BUILD_TYPE: x32
-    DIST_PATH: build/bin/x32/Release
   before_script:
     - apt update; apt -y install gcc-multilib g++-multilib
 
@@ -87,10 +85,6 @@ build_wasm:
   variables:
     PREMAKE_OS: emscripten
     BUILD_TYPE: wasm
-    DIST_PATH: wasm
-    WASM: '1'
-  before_script:
-    - mkdir -p wasm
   image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian12
 
 .build_windows:
@@ -148,7 +142,6 @@ build_macos_m1:
     - macos-m1
   variables:
     BUILD_TYPE: arm64
-    DIST_PATH: build/bin/arm64/Release
 
 build_macos:
   stage: combine
