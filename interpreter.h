@@ -45,7 +45,6 @@ public:
 	int32_t call_depth;
 	int32_t disable_action_check;
 	int32_t preloaded;
-	LuaMemTracker* mem_tracker = nullptr;
 
 	explicit interpreter(duel* pd, bool enable_unsafe_libraries);
 	~interpreter();
