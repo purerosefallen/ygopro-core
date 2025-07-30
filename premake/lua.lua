@@ -1,9 +1,6 @@
 project "lua"
     kind "StaticLib"
     compileas "C++"
-    if WASM then
-        toolset "emcc"
-    end
 
     files { "src/*.c", "src/*.h" }
     removefiles { "src/lua.c", "src/luac.c", "src/onelua.c" }
