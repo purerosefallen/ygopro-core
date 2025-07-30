@@ -57,7 +57,7 @@ public:
 	int32_t preloaded;
 	LuaMemTracker* mem_tracker = nullptr;
 
-	explicit interpreter(duel* pd);
+	explicit interpreter(duel* pd, bool enable_unsafe_libraries);
 	~interpreter();
 
 	void register_card(card* pcard);
