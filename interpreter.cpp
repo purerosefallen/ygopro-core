@@ -54,7 +54,6 @@ interpreter::interpreter(duel* pd, bool enable_unsafe_libraries): coroutines(256
 		nil_out("loadfile");
 	}
 #endif
-
 	//open all libs
 	scriptlib::open_cardlib(lua_state);
 	scriptlib::open_effectlib(lua_state);
