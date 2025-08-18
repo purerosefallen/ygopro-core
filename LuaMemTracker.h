@@ -12,7 +12,7 @@
 
 class LuaMemTracker {
 public:
-	LuaMemTracker(lua_Alloc real_alloc, void* real_ud, size_t mem_limit = 0);
+	LuaMemTracker(size_t mem_limit = 0);
 	~LuaMemTracker();
 	static void* AllocThunk(void* ud, void* ptr, size_t osize, size_t nsize);
 	void* Alloc(void* ptr, size_t osize, size_t nsize);

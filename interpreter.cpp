@@ -14,15 +14,8 @@
 #include "ocgapi.h"
 #include "interpreter.h"
 
-interpreter::interpreter(duel* pd): coroutines(256) {
-	lua_State* tmp_L = luaL_newstate();  // 只是为了拿默认 alloc
-	lua_Alloc raw_alloc;
-	void* raw_ud;
-	raw_alloc = lua_getallocf(tmp_L, &raw_ud);
-	lua_close(tmp_L);
-
-	mem_tracker = new LuaMemTracker(raw_alloc, raw_ud, YGOPRO_LUA_MEMORY_SIZE);
-
+interpreter::interpreter(duel* pd, bool enable_unsafe_libraries): coroutines(256) {
+	mem_tracker = new LuaMemTracker(YGOPRO_LUA_MEMORY_SIZE);
 	lua_state = lua_newstate(LuaMemTracker::AllocThunk, mem_tracker);
 	current_state = lua_state;
 	pduel = pd;
@@ -46,8 +39,21 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_pop(lua_state, 1);
 	luaL_requiref(lua_state, "coroutine", luaopen_coroutine, 1);
 	lua_pop(lua_state, 1);
-#endif
+	if (enable_unsafe_libraries) {
+		luaL_requiref(lua_state, "io", luaopen_io, 1);
+		lua_pop(lua_state, 1);
+	}
 
+	auto nil_out = [&](const char* name) {
+		lua_pushnil(lua_state);
+		lua_setglobal(lua_state, name);
+	};
+	nil_out("collectgarbage");
+	if (!enable_unsafe_libraries) {
+		nil_out("dofile");
+		nil_out("loadfile");
+	}
+#endif
 	//open all libs
 	scriptlib::open_cardlib(lua_state);
 	scriptlib::open_effectlib(lua_state);
