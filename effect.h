@@ -11,6 +11,7 @@
 #include "common.h"
 #include "field.h"
 #include "effectset.h"
+#include "metadata.h"
 #include <vector>
 
 class card;
@@ -67,6 +68,7 @@ public:
 	
 	effect_set required_handorset_effects;
 	LuaParamType object_type{ PARAM_TYPE_INT };
+	metadata meta;
 
 	explicit effect(duel* pd);
 	~effect() = default;
