@@ -18,8 +18,8 @@
 
 #ifndef OCGCORE_API
 #if defined(__EMSCRIPTEN__)
-  #include <emscripten/emscripten.h>
-  #define OCGCORE_API EXTERN_C EMSCRIPTEN_KEEPALIVE
+#include <emscripten/emscripten.h>
+#define OCGCORE_API EXTERN_C EMSCRIPTEN_KEEPALIVE
 #elif defined(_WIN32)
 #define OCGCORE_API EXTERN_C __declspec(dllexport)
 #else

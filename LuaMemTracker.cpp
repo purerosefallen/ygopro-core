@@ -1,7 +1,12 @@
 #include "LuaMemTracker.h"
+#include <lauxlib.h>
 
-LuaMemTracker::LuaMemTracker(lua_Alloc alloc_func, void* ud, size_t mem_limit)
-	: real_alloc(alloc_func), real_ud(ud), limit(mem_limit) {
+LuaMemTracker::LuaMemTracker(size_t mem_limit)
+		: limit(mem_limit) {
+	lua_State* tmp_L = luaL_newstate();  // get default alloc
+	real_alloc = lua_getallocf(tmp_L, &real_ud);
+	lua_close(tmp_L);
+
 #ifdef YGOPRO_LOG_LUA_MEMORY_SIZE
 	time_t now = time(nullptr);
 	char filename[64];
@@ -30,7 +35,7 @@ void* LuaMemTracker::AllocThunk(void* ud, void* ptr, size_t osize, size_t nsize)
 
 void* LuaMemTracker::Alloc(void* ptr, size_t osize, size_t nsize) {
 	if (nsize == 0) {
-		if (ptr && osize <= total_allocated) {
+		if (ptr) {
 			total_allocated -= osize;
 		}
 		return real_alloc(real_ud, ptr, osize, nsize);
@@ -70,6 +75,6 @@ void LuaMemTracker::write_log() {
 		std::fprintf(log_file, "%s | used = %zu bytes | max_used = %zu bytes | limit = unlimited\n",
 			time_buf, total_allocated, max_used);
 
-	std::fflush(log_file);  // 确保实时写入磁盘
+	std::fflush(log_file);  // make it write instantly
 }
 #endif
