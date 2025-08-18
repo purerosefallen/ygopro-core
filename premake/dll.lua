@@ -1,5 +1,4 @@
 newoption { trigger = "lua-dir", description = "", value = "PATH", default = "./lua" }
-newoption { trigger = "wasm", description = "" }
 newoption { trigger = "sqlite3-dir", description = "", value = "PATH" }
 
 function GetParam(param)
@@ -11,8 +10,6 @@ if not os.isdir(LUA_DIR) then
     LUA_DIR="../lua"
 end
 
-WASM = GetParam("wasm")
-
 SQLITE3_DIR=GetParam("sqlite3-dir")
 
 workspace "ocgcoredll"
@@ -20,12 +17,7 @@ workspace "ocgcoredll"
     language "C++"
     cppdialect "C++14"
     configurations { "Release", "Debug" }
-    if WASM then
-        toolset "emcc"
-        platforms { "wasm" }
-    else
-        platforms { "x64", "x32", "arm64" }
-    end
+    platforms { "x64", "x32", "arm64", "wasm" }
     
     filter "platforms:x32"
         architecture "x32"
@@ -69,8 +61,9 @@ workspace "ocgcoredll"
         pic "On"
         linkoptions { "-static-libstdc++", "-static-libgcc" }
 
-    filter "system:emscripten"
-        defines { "LUA_USE_LONGJMP", "LUA_USE_C89" }
+    filter "platforms:wasm"
+        toolset "emcc"
+        defines { "LUA_USE_C89", "LUA_USE_LONGJMP" }
         pic "On"
 
 filter {}
@@ -86,9 +79,9 @@ project "ocgcore"
     
     includedirs { LUA_DIR .. "/src" }
 
-    filter "system:emscripten"
+    filter "platforms:wasm"
         targetextension ".wasm"
-        linkoptions { "-s MODULARIZE=1", "-s EXPORT_NAME=\"createOcgcore\"", "--no-entry", "-s ENVIRONMENT=web,node", "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", "-s ALLOW_TABLE_GROWTH=1", "-s ALLOW_MEMORY_GROWTH=1", "-o ../wasm/libocgcore.js" }
+        linkoptions { "-s MODULARIZE=1", "-s EXPORT_NAME=\"createOcgcore\"", "--no-entry", "-s ENVIRONMENT=web,node", "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\"]", "-s ALLOW_TABLE_GROWTH=1", "-s ALLOW_MEMORY_GROWTH=1", "-o ../build/bin/wasm/Release/libocgcore.js" }
 
 if not WASM and SQLITE3_DIR and os.isdir(SQLITE3_DIR) then
 project "sqlite3"
