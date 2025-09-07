@@ -37,6 +37,7 @@ public:
 	static int32_t card_get_origin_link_marker(lua_State *L);
 	static int32_t card_is_xyz_summonable_by_rose(lua_State *L);
 	static int32_t card_get_removed_overlay_count(lua_State *L);
+	static int32_t card_check_spsummon_once(lua_State *L);
 	static int32_t effect_set_owner(lua_State *L);
 	static int32_t effect_get_count_limit(lua_State *L);
 	static int32_t duel_get_master_rule(lua_State *L);
@@ -57,6 +58,7 @@ public:
 	static int32_t duel_set_registry(lua_State *L);
 	static int32_t duel_get_registry(lua_State *L);
 	static int32_t duel_clear_registry(lua_State *L);
+	static int32_t duel_is_global_flag(lua_State *L);
 	//card lib
 	static int32_t card_get_code(lua_State *L);
 	static int32_t card_get_origin_code(lua_State *L);
