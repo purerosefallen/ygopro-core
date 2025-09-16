@@ -3664,6 +3664,15 @@ int32_t scriptlib::card_clear_meta(lua_State *L) {
 	card* pcard = *(card**) lua_touserdata(L, 1);
 	return pcard->meta.luaop_clear();
 }
+int32_t scriptlib::card_check_spsummon_once(lua_State *L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	card* pcard = *(card**) lua_touserdata(L, 1);
+	auto playerid = (int32_t)lua_tointeger(L, 2);
+	auto pduel = pcard->pduel;
+	lua_pushboolean(L, pduel->game_field->check_spsummon_once(pcard, playerid));
+	return 1;
+}
 
 static const struct luaL_Reg cardlib[] = {
 	//millux
@@ -3959,6 +3968,7 @@ static const struct luaL_Reg cardlib[] = {
 	{ "HasMetaValue", scriptlib::card_has_meta_value },
 	{ "ClearMeta", scriptlib::card_clear_meta },
 	{ "GetMetaKeys", scriptlib::card_get_meta_keys },
+	{ "CheckSPSummonOnce", scriptlib::card_check_spsummon_once },
 	{ nullptr, nullptr }
 };
 void scriptlib::open_cardlib(lua_State *L) {
