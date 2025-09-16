@@ -372,10 +372,17 @@ int32_t scriptlib::duel_clear_registry(lua_State *L) {
 
 int32_t scriptlib::duel_enable_global_flag(lua_State *L) {
 	check_param_count(L, 1);
-	int32_t flag = (int32_t)lua_tointeger(L, 1);
+	uint32_t flag = (uint32_t)lua_tointeger(L, 1);
 	duel* pduel = interpreter::get_duel_info(L);
 	pduel->game_field->core.global_flag |= flag;
 	return 0;
+}
+int32_t scriptlib::duel_is_global_flag(lua_State *L) {
+	check_param_count(L, 1);
+	uint32_t flag = (uint32_t)lua_tointeger(L, 1);
+	duel* pduel = interpreter::get_duel_info(L);
+	lua_pushboolean(L, (pduel->game_field->core.global_flag & flag) == flag);
+	return 1;
 }
 
 int32_t scriptlib::duel_is_global_flag(lua_State *L) {
@@ -5353,6 +5360,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "IsGlobalFlag", scriptlib::duel_is_global_flag },
 
 	{ "EnableGlobalFlag", scriptlib::duel_enable_global_flag },
+	{ "IsGlobalFlag", scriptlib::duel_is_global_flag },
 	{ "GetLP", scriptlib::duel_get_lp },
 	{ "SetLP", scriptlib::duel_set_lp },
 	{ "IsTurnPlayer", scriptlib::duel_is_turn_player },

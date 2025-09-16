@@ -14,14 +14,11 @@
 #include "ocgapi.h"
 #include "interpreter.h"
 
-interpreter::interpreter(duel* pd, bool enable_unsafe_libraries): coroutines(256) {
+interpreter::interpreter(duel* pd, bool enable_unsafe_libraries) : coroutines(256), pduel(pd) {
 	mem_tracker = new LuaMemTracker(YGOPRO_LUA_MEMORY_SIZE);
 	lua_state = lua_newstate(LuaMemTracker::AllocThunk, mem_tracker);
 	current_state = lua_state;
-	pduel = pd;
 	std::memcpy(lua_getextraspace(lua_state), &pd, LUA_EXTRASPACE); //set_duel_info
-	no_action = 0;
-	call_depth = 0;
 	disable_action_check = 0;
 	//Initial
 #ifdef YGOPRO_NO_LUA_SAFE
