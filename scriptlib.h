@@ -58,7 +58,6 @@ public:
 	static int32_t duel_set_registry(lua_State *L);
 	static int32_t duel_get_registry(lua_State *L);
 	static int32_t duel_clear_registry(lua_State *L);
-	static int32_t duel_is_global_flag(lua_State *L);
 	//card lib
 	static int32_t card_get_code(lua_State *L);
 	static int32_t card_get_origin_code(lua_State *L);
