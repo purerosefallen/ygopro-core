@@ -193,15 +193,6 @@ int32_t scriptlib::card_get_removed_overlay_count(lua_State *L) {
 	lua_pushinteger(L, pcard->removed_overlay_count);
 	return 1;
 }
-int32_t scriptlib::card_check_spsummon_once(lua_State *L) {
-	check_param_count(L, 2);
-	check_param(L, PARAM_TYPE_CARD, 1);
-	card* pcard = *(card**) lua_touserdata(L, 1);
-	auto playerid = (int32_t)lua_tointeger(L, 2);
-	auto pduel = pcard->pduel;
-	lua_pushboolean(L, pduel->game_field->check_spsummon_once(pcard, playerid));
-	return 1;
-}
 
 int32_t scriptlib::card_get_code(lua_State *L) {
 	check_param_count(L, 1);
@@ -3695,7 +3686,6 @@ static const struct luaL_Reg cardlib[] = {
 	{ "GetRemovedOverlayCount", scriptlib::card_get_removed_overlay_count },
 	{ "IsAbleToDecreaseAttackAsCost", scriptlib::card_is_able_to_decrease_attack_as_cost },
 	{ "IsAbleToDecreaseDefenseAsCost", scriptlib::card_is_able_to_decrease_defense_as_cost },
-	{ "CheckSPSummonOnce", scriptlib::card_check_spsummon_once },
 
 	{ "GetCode", scriptlib::card_get_code },
 	{ "GetOriginalCode", scriptlib::card_get_origin_code },
