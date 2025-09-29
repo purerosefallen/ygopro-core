@@ -258,7 +258,7 @@ int32_t interpreter::load_script(const char* script_name) {
 	++no_action;
 	luaL_checkstack(current_state, 2, nullptr);
 	int32_t error = 0;
-	if (enable_unsafe_feature)
+	if (enable_unsafe_feature && true)
 		error = luaL_loadbuffer(current_state, (const char*)buffer, len, script_name) || lua_pcall(current_state, 0, 0, 0);
 	else
 		error = luaL_loadbufferx(current_state, (const char*)buffer, len, script_name, "t") || lua_pcall(current_state, 0, 0, 0);
