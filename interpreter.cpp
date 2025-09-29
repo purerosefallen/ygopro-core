@@ -14,7 +14,8 @@
 #include "ocgapi.h"
 #include "interpreter.h"
 
-interpreter::interpreter(duel* pd, bool enable_unsafe_libraries) : coroutines(256), pduel(pd) {
+interpreter::interpreter(duel* pd, bool enable_unsafe_libraries)
+	: coroutines(256), pduel(pd), enable_unsafe_feature(enable_unsafe_libraries) {
 	mem_tracker = new LuaMemTracker(YGOPRO_LUA_MEMORY_SIZE);
 	lua_state = lua_newstate(LuaMemTracker::AllocThunk, mem_tracker);
 	current_state = lua_state;
@@ -256,7 +257,11 @@ int32_t interpreter::load_script(const char* script_name) {
 		return OPERATION_FAIL;
 	++no_action;
 	luaL_checkstack(current_state, 2, nullptr);
-	int32_t error = luaL_loadbuffer(current_state, (const char*)buffer, len, script_name) || lua_pcall(current_state, 0, 0, 0);
+	int32_t error = 0;
+	if (enable_unsafe_feature)
+		error = luaL_loadbuffer(current_state, (const char*)buffer, len, script_name) || lua_pcall(current_state, 0, 0, 0);
+	else
+		error = luaL_loadbufferx(current_state, (const char*)buffer, len, script_name, "t") || lua_pcall(current_state, 0, 0, 0);
 	if (error) {
 		interpreter::sprintf(pduel->strbuffer, "%s", lua_tostring(current_state, -1));
 		handle_message(pduel, 1);

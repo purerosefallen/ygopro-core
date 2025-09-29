@@ -43,6 +43,7 @@ public:
 	coroutine_map coroutines;
 	int32_t no_action{};
 	int32_t call_depth{};
+	bool enable_unsafe_feature{};
 	int32_t disable_action_check{};
 	int32_t preloaded{};
 
