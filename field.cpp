@@ -1164,6 +1164,8 @@ void field::add_effect(effect* peffect, uint8_t owner_player) {
 		return;
 	if (effects.indexer.find(peffect) != effects.indexer.end())
 		return;
+	if (peffect->type & EFFECT_TYPES_CHAIN_LINK && peffect->owner == temp_card)
+		return;
 	effect_container::iterator it;
 	if (!(peffect->type & EFFECT_TYPE_ACTIONS)) {
 		it = effects.aura_effect.emplace(peffect->code, peffect);
@@ -2619,6 +2621,16 @@ int32_t field::check_tuner_material(lua_State* L, card* pcard, card* tuner, int3
 		}
 		if(min > max) {
 			pduel->restore_assumes();
+			return FALSE;
+		}
+	}
+	effect* extra_synchro_material_effect = tuner->is_affected_by_effect(EFFECT_EXTRA_SYNCHRO_MATERIAL);
+	if (extra_synchro_material_effect) {
+		if (!extra_synchro_material_effect->check_count_limit(playerid)) {
+			return FALSE;
+		}
+		int32_t value = extra_synchro_material_effect->get_value(pcard);
+		if (value <= 0) {
 			return FALSE;
 		}
 	}
