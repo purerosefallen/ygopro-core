@@ -1,5 +1,10 @@
 project "ocgcore"
-    kind "StaticLib"
+    if OCGCORE_DYNAMIC then
+        kind "SharedLib"
+        links { "lua" }
+    else
+        kind "StaticLib"
+    end
 
     files { "*.cpp", "*.h" }
     
@@ -20,3 +25,7 @@ project "ocgcore"
 
     filter "system:linux"
         defines { "LUA_USE_LINUX" }
+        if OCGCORE_DYNAMIC then
+            pic "On"
+            linkoptions { "-static-libstdc++", "-static-libgcc" }
+        end
