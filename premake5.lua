@@ -1,7 +1,7 @@
 project "ocgcore"
     if OCGCORE_DYNAMIC then
         kind "SharedLib"
-        links { "lua" }
+        links { LUA_LIB_NAME or "lua" }
     else
         kind "StaticLib"
     end
