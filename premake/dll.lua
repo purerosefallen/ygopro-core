@@ -33,6 +33,8 @@ workspace "ocgcoredll"
     configurations { "Release", "Debug" }
     platforms { "x64", "x32", "arm64", "wasm" }
 
+    defines { "LUA_USE_LONGJMP" }
+
     for _, boolOption in ipairs(boolOptions) do
         ApplyBoolean(boolOption)
     end
@@ -81,7 +83,7 @@ workspace "ocgcoredll"
 
     filter "platforms:wasm"
         toolset "emcc"
-        defines { "LUA_USE_C89", "LUA_USE_LONGJMP" }
+        defines { "LUA_USE_C89" }
         pic "On"
 
 filter {}
