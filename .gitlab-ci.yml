@@ -7,6 +7,10 @@ stages:
 variables:
   GIT_DEPTH: "1"
 
+.no_888:
+  except:
+    - '888'
+
 mat_common:
   stage: prepare
   tags:
@@ -24,6 +28,7 @@ mat_common:
       - sqlite3
 
 mat_windows:
+  extends: .no_888
   stage: prepare
   tags:
     - linux
@@ -36,6 +41,7 @@ mat_windows:
       - premake5.exe
 
 mat_macos:
+  extends: .no_888
   stage: prepare
   tags:
     - linux
@@ -46,13 +52,20 @@ mat_macos:
     paths:
       - premake5
 
-.build_unix:
+.build:
+  extends: .no_888
   stage: build
+  dependencies:
+    - mat_common
+  artifacts:
+    paths:
+      - dist
+
+.build_unix:
+  extends: .build
   tags:
     - noavx2
   image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian11
-  dependencies:
-    - mat_common
   variables:
     PREMAKE_OS: linux
     BUILD_TYPE: x64
@@ -66,12 +79,10 @@ mat_macos:
     - mkdir -p dist/$BUILD_TYPE
     - cp build/bin/$BUILD_TYPE/Release/libocgcore.* dist/$BUILD_TYPE/
     - cp build/bin/$BUILD_TYPE/Release/libsqlite3.* dist/$BUILD_TYPE/ || true
-  artifacts:
-    paths:
-      - dist
 
 build_linux_x64:
   extends: .build_unix
+  except: []
 
 build_linux_x32:
   extends: .build_unix
@@ -88,7 +99,7 @@ build_wasm:
   image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian12
 
 .build_windows:
-  stage: build
+  extends: .build
   dependencies:
     - mat_common
     - mat_windows
@@ -98,9 +109,6 @@ build_wasm:
     - copy premake\dll.lua dll.lua
     - '.\premake5.exe vs2019 --file=dll.lua --sqlite3-dir=sqlite3'
     - mkdir dist
-  artifacts:
-    paths:
-      - dist
 
 build_windows_x32:
   extends: .build_windows
@@ -144,6 +152,7 @@ build_macos_m1:
     BUILD_TYPE: arm64
 
 build_macos:
+  extends: .no_888
   stage: combine
   dependencies:
     - build_macos_x64
