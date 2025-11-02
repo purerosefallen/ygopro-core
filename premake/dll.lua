@@ -1,6 +1,14 @@
 newoption { trigger = "lua-dir", description = "", value = "PATH", default = "./lua" }
 newoption { trigger = "sqlite3-dir", description = "", value = "PATH" }
 
+boolOptions = {
+    "no-lua-safe",
+}
+
+for _, boolOption in ipairs(boolOptions) do
+    newoption { trigger = boolOption, category = "YGOPro - options", description = "" }
+end
+
 function GetParam(param)
     return _OPTIONS[param] or os.getenv(string.upper(string.gsub(param,"-","_")))
 end
@@ -12,12 +20,22 @@ end
 
 SQLITE3_DIR=GetParam("sqlite3-dir")
 
+function ApplyBoolean(param)
+    if GetParam(param) then
+        defines { "YGOPRO_" .. string.upper(string.gsub(param,"-","_")) }
+    end
+end
+
 workspace "ocgcoredll"
     location "build"
     language "C++"
     cppdialect "C++14"
     configurations { "Release", "Debug" }
     platforms { "x64", "x32", "arm64", "wasm" }
+
+    for _, boolOption in ipairs(boolOptions) do
+        ApplyBoolean(boolOption)
+    end
     
     filter "platforms:x32"
         architecture "x32"
