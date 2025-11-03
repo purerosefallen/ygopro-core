@@ -28,5 +28,5 @@ project "ocgcore"
         defines { "LUA_USE_LINUX" }
         if OCGCORE_DYNAMIC then
             pic "On"
-            linkoptions { "-static-libstdc++", "-static-libgcc" }
+            -- linkoptions { "-static-libstdc++", "-static-libgcc" }
         end
