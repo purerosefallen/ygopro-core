@@ -20,6 +20,7 @@ if not os.isdir(LUA_DIR) then
 end
 
 SQLITE3_DIR=GetParam("sqlite3-dir")
+USE_LONGJMP=not GetParam("no-longjmp")
 
 function ApplyBoolean(param)
     if GetParam(param) then
@@ -34,7 +35,7 @@ workspace "ocgcoredll"
     configurations { "Release", "Debug" }
     platforms { "x64", "x32", "arm64", "wasm" }
 
-    if not GetParam("no-longjmp") then
+    if USE_LONGJMP then
         defines { "LUA_USE_LONGJMP" }
     end
 
@@ -82,7 +83,9 @@ workspace "ocgcoredll"
     filter "system:linux"
         defines { "LUA_USE_LINUX" }
         pic "On"
-        -- linkoptions { "-static-libstdc++", "-static-libgcc" }
+        if not USE_LONGJMP then
+            linkoptions { "-static-libstdc++", "-static-libgcc" }
+        end
 
     filter "platforms:wasm"
         toolset "emcc"
