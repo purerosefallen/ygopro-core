@@ -86,6 +86,8 @@ build_linux_x64:
 build_linux_x64_no_longjmp:
   extends: .build_unix
   except: []
+  only:
+    - '888'
   variables:
     NO_LONGJMP: '1'
 

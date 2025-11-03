@@ -83,7 +83,7 @@ workspace "ocgcoredll"
     filter "system:linux"
         defines { "LUA_USE_LINUX" }
         pic "On"
-        if not USE_LONGJMP then
+        if USE_LONGJMP then
             linkoptions { "-static-libstdc++", "-static-libgcc" }
         end
 
