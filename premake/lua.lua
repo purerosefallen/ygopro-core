@@ -5,8 +5,6 @@ project "lua"
     files { "src/*.c", "src/*.h" }
     removefiles { "src/lua.c", "src/luac.c", "src/onelua.c" }
 
-    defines { "LUA_USE_LONGJMP" }
-
     if not GetParam("no-lua-safe") then
         removefiles { "src/linit.c" }
     end
