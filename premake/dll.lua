@@ -1,5 +1,14 @@
 newoption { trigger = "lua-dir", description = "", value = "PATH", default = "./lua" }
 newoption { trigger = "sqlite3-dir", description = "", value = "PATH" }
+newoption { trigger = "no-longjmp", description = "Disable use of longjmp for error handling in Lua" }
+
+boolOptions = {
+    "no-lua-safe",
+}
+
+for _, boolOption in ipairs(boolOptions) do
+    newoption { trigger = boolOption, category = "YGOPro - options", description = "" }
+end
 
 function GetParam(param)
     return _OPTIONS[param] or os.getenv(string.upper(string.gsub(param,"-","_")))
@@ -11,6 +20,13 @@ if not os.isdir(LUA_DIR) then
 end
 
 SQLITE3_DIR=GetParam("sqlite3-dir")
+USE_LONGJMP=not GetParam("no-longjmp")
+
+function ApplyBoolean(param)
+    if GetParam(param) then
+        defines { "YGOPRO_" .. string.upper(string.gsub(param,"-","_")) }
+    end
+end
 
 workspace "ocgcoredll"
     location "build"
@@ -18,6 +34,14 @@ workspace "ocgcoredll"
     cppdialect "C++14"
     configurations { "Release", "Debug" }
     platforms { "x64", "x32", "arm64", "wasm" }
+
+    if USE_LONGJMP then
+        defines { "LUA_USE_LONGJMP" }
+    end
+
+    for _, boolOption in ipairs(boolOptions) do
+        ApplyBoolean(boolOption)
+    end
     
     filter "platforms:x32"
         architecture "x32"
@@ -59,11 +83,13 @@ workspace "ocgcoredll"
     filter "system:linux"
         defines { "LUA_USE_LINUX" }
         pic "On"
-        linkoptions { "-static-libstdc++", "-static-libgcc" }
+        if USE_LONGJMP then
+            linkoptions { "-static-libstdc++", "-static-libgcc" }
+        end
 
     filter "platforms:wasm"
         toolset "emcc"
-        defines { "LUA_USE_C89", "LUA_USE_LONGJMP" }
+        defines { "LUA_USE_C89" }
         pic "On"
 
 filter {}
