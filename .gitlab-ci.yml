@@ -82,7 +82,14 @@ mat_macos:
 
 build_linux_x64:
   extends: .build_unix
+
+build_linux_x64_no_longjmp:
+  extends: .build_unix
   except: []
+  only:
+    - '888'
+  variables:
+    NO_LONGJMP: '1'
 
 build_linux_x32:
   extends: .build_unix
@@ -189,11 +196,11 @@ upload_to_minio:
   tags:
     - linux
   dependencies:
-    - build_linux_x64
+    - build_linux_x64_no_longjmp
   variables:
     SERVER_USER: nanahira
     SERVER_HOST: koishi.momobako.com
-    FROM_PATH: ''
+    FROM_PATH: 'dist/x64/libocgcore.so'
     SERVER_PATH: ''
   script:
     - apt update && apt -y install openssh-client rsync coreutils
@@ -207,7 +214,6 @@ upload_to_minio:
 deploy_888:
   extends: .deploy_to_server
   variables:
-    FROM_PATH: 'dist/x64/libocgcore.so'
     SERVER_PATH: '~/ygopro-super-pre/bin/release/'
   only:
     - '888'

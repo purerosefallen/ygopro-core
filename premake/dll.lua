@@ -1,5 +1,6 @@
 newoption { trigger = "lua-dir", description = "", value = "PATH", default = "./lua" }
 newoption { trigger = "sqlite3-dir", description = "", value = "PATH" }
+newoption { trigger = "no-longjmp", description = "Disable use of longjmp for error handling in Lua" }
 
 boolOptions = {
     "no-lua-safe",
@@ -19,6 +20,7 @@ if not os.isdir(LUA_DIR) then
 end
 
 SQLITE3_DIR=GetParam("sqlite3-dir")
+USE_LONGJMP=not GetParam("no-longjmp")
 
 function ApplyBoolean(param)
     if GetParam(param) then
@@ -33,7 +35,9 @@ workspace "ocgcoredll"
     configurations { "Release", "Debug" }
     platforms { "x64", "x32", "arm64", "wasm" }
 
-    defines { "LUA_USE_LONGJMP" }
+    if USE_LONGJMP then
+        defines { "LUA_USE_LONGJMP" }
+    end
 
     for _, boolOption in ipairs(boolOptions) do
         ApplyBoolean(boolOption)
@@ -79,7 +83,9 @@ workspace "ocgcoredll"
     filter "system:linux"
         defines { "LUA_USE_LINUX" }
         pic "On"
-        linkoptions { "-static-libstdc++", "-static-libgcc" }
+        if USE_LONGJMP then
+            linkoptions { "-static-libstdc++", "-static-libgcc" }
+        end
 
     filter "platforms:wasm"
         toolset "emcc"
