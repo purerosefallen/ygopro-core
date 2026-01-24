@@ -5476,7 +5476,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 			card* pm = *cit;
 			if(start != cit)
 				std::iter_swap(start, cit);
-			if(check_other_synchro_material(nsyn, lv, min - 1, max - 1, mcount + 1))
+			if(check_other_synchro_material(nsyn, lv, min - mcount, max - mcount, mcount + 1))
 				core.select_cards.push_back(pm);
 			if(start != cit)
 				std::iter_swap(start, cit);
@@ -5544,6 +5544,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 	}
 	case 7: {
 		int32_t lv = pcard->get_level();
+		int32_t mcount = (int32_t)core.must_select_cards.size();
 		if(core.global_flag & GLOBALFLAG_SCRAP_CHIMERA) {
 			effect* peffect = nullptr;
 			for(auto& pm : core.select_cards) {
@@ -5590,7 +5591,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 		pduel->write_buffer8(HINT_SELECTMSG);
 		pduel->write_buffer8(playerid);
 		pduel->write_buffer32(512);
-		add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, lv, playerid, min, max);
+		add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, lv, playerid, min - (mcount - 1), max - (mcount - 1));
 		return FALSE;
 	}
 	case 8: {
@@ -5618,6 +5619,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 	}
 	case 10: {
 		int32_t lv = pcard->get_level();
+		int32_t mcount = (int32_t)core.must_select_cards.size();
 		if(returns.ivalue[0]) {
 			effect* peffect = nullptr;
 			for(auto& pm : core.select_cards) {
@@ -5643,7 +5645,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 		pduel->write_buffer8(HINT_SELECTMSG);
 		pduel->write_buffer8(playerid);
 		pduel->write_buffer32(512);
-		add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, lv, playerid, min, max);
+		add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, lv, playerid, min - (mcount - 1), max - (mcount - 1));
 		core.units.begin()->step = 7;
 		return FALSE;
 	}
