@@ -106,6 +106,9 @@ project "ocgcore"
     includedirs { LUA_DIR .. "/src" }
 
     filter "platforms:wasm_cjs or platforms:wasm_esm"
+        -- Avoid -shared so emcc emits JS glue + .wasm.
+        kind "ConsoleApp"
+        targetprefix "lib"
         local wasmLinkOptions = { 
             "-s MODULARIZE=1", 
             "-s EXPORT_NAME=\"createOcgcore\"", 
