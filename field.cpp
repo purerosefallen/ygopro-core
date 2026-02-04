@@ -2688,7 +2688,7 @@ int32_t field::check_tuner_material(lua_State* L, card* pcard, card* tuner, int3
 				++location_count;
 		}
 		if(min == 0) {
-			if(location_count > 0 && check_with_sum_limit_m(nsyn, lv, 0, 0, 0, 0xffff, 2)) {
+			if(location_count > 0 && must_list.size() == 0 && check_with_sum_limit_m(nsyn, lv, 0, 0, 0, 0xffff, 2)) {
 				pduel->restore_assumes();
 				return TRUE;
 			}
@@ -2700,6 +2700,12 @@ int32_t field::check_tuner_material(lua_State* L, card* pcard, card* tuner, int3
 	}
 	if(must_list.size()) {
 		for(auto& mcard : must_list) {
+			if(mg) {
+				if(!mg->has_card(mcard)) {
+					pduel->restore_assumes();
+					return FALSE;
+				}
+			}
 			if(pcheck)
 				pcheck->get_value(mcard);
 			if((mcard->current.location == LOCATION_MZONE && !mcard->is_position(POS_FACEUP)) || !mcard->is_can_be_synchro_material(pcard, tuner)) {
