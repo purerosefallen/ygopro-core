@@ -33,7 +33,7 @@ workspace "ocgcoredll"
     language "C++"
     cppdialect "C++14"
     configurations { "Release", "Debug" }
-    platforms { "x64", "x32", "arm64", "wasm" }
+    platforms { "x64", "x32", "arm64", "wasm_cjs", "wasm_esm" }
 
     if USE_LONGJMP then
         defines { "LUA_USE_LONGJMP" }
@@ -87,7 +87,7 @@ workspace "ocgcoredll"
             linkoptions { "-static-libstdc++", "-static-libgcc" }
         end
 
-    filter "platforms:wasm"
+    filter "platforms:wasm_cjs or platforms:wasm_esm"
         toolset "emcc"
         defines { "LUA_USE_C89" }
         pic "On"
@@ -105,9 +105,31 @@ project "ocgcore"
     
     includedirs { LUA_DIR .. "/src" }
 
-    filter "platforms:wasm"
-        targetextension ".wasm"
-        linkoptions { "-s MODULARIZE=1", "-s EXPORT_NAME=\"createOcgcore\"", "--no-entry", "-s ENVIRONMENT=web,node", "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\"]", "-s ALLOW_TABLE_GROWTH=1", "-s ALLOW_MEMORY_GROWTH=1", "-o ../build/bin/wasm/Release/libocgcore.js" }
+    filter "platforms:wasm_cjs or platforms:wasm_esm"
+        -- Avoid -shared so emcc emits JS glue + .wasm.
+        kind "ConsoleApp"
+        targetprefix "lib"
+        local wasmLinkOptions = { 
+            "-s MODULARIZE=1", 
+            "-s EXPORT_NAME=\"createOcgcore\"", 
+            "--no-entry", 
+            "-s ENVIRONMENT=web,worker,node", 
+            "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", 
+            "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\"]", 
+            "-s ALLOW_TABLE_GROWTH=1", 
+            "-s ALLOW_MEMORY_GROWTH=1",
+        }
+        linkoptions(wasmLinkOptions)
+
+    filter "platforms:wasm_esm"
+        -- Build as ES module
+        targetextension ".mjs"
+        linkoptions { "-s EXPORT_ES6=1" }
+
+    filter "platforms:wasm_cjs"
+        targetextension ".cjs"
+
+    filter {}
 
 if not WASM and SQLITE3_DIR and os.isdir(SQLITE3_DIR) then
 project "sqlite3"
