@@ -5369,7 +5369,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 		effect* pcheck = tuner->is_affected_by_effect(EFFECT_SYNCHRO_CHECK);
 		if(pcheck)
 			pcheck->get_value(smat);
-		if(min == 1) {
+		if(min == 1 && max == 1) {
 			group* pgroup = pduel->new_group();
 			pgroup->container.insert(tuner);
 			pgroup->container.insert(smat);
