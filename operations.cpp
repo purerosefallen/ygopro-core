@@ -5422,13 +5422,10 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 		}
 		if(!smat)
 			return FALSE;
-		--min;
-		--max;
-		core.units.begin()->arg2 = min + (max << 16);
 		effect* pcheck = tuner->is_affected_by_effect(EFFECT_SYNCHRO_CHECK);
 		if(pcheck)
 			pcheck->get_value(smat);
-		if(min == 0) {
+		if(min == 1 && max == 1) {
 			group* pgroup = pduel->new_group();
 			pgroup->container.insert(tuner);
 			pgroup->container.insert(smat);
@@ -5532,7 +5529,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 			card* pm = *cit;
 			if(start != cit)
 				std::iter_swap(start, cit);
-			if(check_other_synchro_material(nsyn, lv, min - 1, max - 1, mcount + 1))
+			if(check_other_synchro_material(nsyn, lv, min - mcount, max - mcount, mcount + 1))
 				core.select_cards.push_back(pm);
 			if(start != cit)
 				std::iter_swap(start, cit);
@@ -5600,6 +5597,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 	}
 	case 7: {
 		int32_t lv = pcard->get_level();
+		int32_t mcount = (int32_t)core.must_select_cards.size();
 		if(core.global_flag & GLOBALFLAG_SCRAP_CHIMERA) {
 			effect* peffect = nullptr;
 			for(auto& pm : core.select_cards) {
@@ -5646,7 +5644,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 		pduel->write_buffer8(HINT_SELECTMSG);
 		pduel->write_buffer8(playerid);
 		pduel->write_buffer32(512);
-		add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, lv, playerid, min, max);
+		add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, lv, playerid, min - (mcount - 1), max - (mcount - 1));
 		return FALSE;
 	}
 	case 8: {
@@ -5674,6 +5672,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 	}
 	case 10: {
 		int32_t lv = pcard->get_level();
+		int32_t mcount = (int32_t)core.must_select_cards.size();
 		if(returns.ivalue[0]) {
 			effect* peffect = nullptr;
 			for(auto& pm : core.select_cards) {
@@ -5699,7 +5698,7 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 		pduel->write_buffer8(HINT_SELECTMSG);
 		pduel->write_buffer8(playerid);
 		pduel->write_buffer32(512);
-		add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, lv, playerid, min, max);
+		add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, lv, playerid, min - (mcount - 1), max - (mcount - 1));
 		core.units.begin()->step = 7;
 		return FALSE;
 	}
@@ -6459,8 +6458,7 @@ int32_t field::toss_coin(uint16_t step, effect * reason_effect, uint8_t reason_p
 		e.reason = 0;
 		e.reason_effect = reason_effect;
 		e.reason_player = reason_player;
-		for(int32_t i = 0; i < MAX_COIN_COUNT; ++i)
-			core.coin_result[i] = 0;
+		core.coin_result = 0;
 		auto pr = effects.continuous_effect.equal_range(EFFECT_TOSS_COIN_REPLACE);
 		for(auto eit = pr.first; eit != pr.second;) {
 			effect* pe = eit->second;
@@ -6471,32 +6469,38 @@ int32_t field::toss_coin(uint16_t step, effect * reason_effect, uint8_t reason_p
 			}
 		}
 		if(!peffect) {
+			auto gen_bits = [&](int32_t n) -> uint32_t {
+				uint32_t mask = (1u << n) - 1u;
+				return (uint32_t)pduel->get_next_integer(0, (int32_t)mask);
+			};
+
 			if (count > 0) {
 				pduel->write_buffer8(MSG_TOSS_COIN);
 				pduel->write_buffer8(playerid);
 				pduel->write_buffer8((uint8_t)count);
 				core.coin_count = count;
+				core.coin_result = gen_bits(count);
 				for (int32_t i = 0; i < count; ++i) {
-					core.coin_result[i] = pduel->get_next_integer(0, 1);
-					pduel->write_buffer8(core.coin_result[i]);
+					pduel->write_buffer8((uint8_t)((core.coin_result >> i) & 1u));
 				}
 			}
 			else if (count == -1) {
 				core.coin_count = 0;
+				uint32_t bits = gen_bits(MAX_COIN_COUNT);
+				int32_t first_zero = -1;
 				for (int32_t i = 0; i < MAX_COIN_COUNT; ++i) {
-					core.coin_result[i] = pduel->get_next_integer(0, 1);
-					if (!core.coin_result[i]) {
-						core.coin_count = i + 1;
+					if (((bits >> i) & 1u) == 0u) {
+						first_zero = i;
 						break;
 					}
 				}
-				if (!core.coin_count)
-					core.coin_count = MAX_COIN_COUNT;
+				core.coin_count = (first_zero == -1) ? MAX_COIN_COUNT : (first_zero + 1);
+				core.coin_result = bits;
 				pduel->write_buffer8(MSG_TOSS_COIN);
 				pduel->write_buffer8(playerid);
 				pduel->write_buffer8((uint8_t)core.coin_count);
 				for (int32_t i = 0; i < core.coin_count; ++i) {
-					pduel->write_buffer8(core.coin_result[i]);
+					pduel->write_buffer8((uint8_t)((core.coin_result >> i) & 1u));
 				}
 			}
 			raise_event(nullptr, EVENT_TOSS_COIN_NEGATE, reason_effect, 0, reason_player, playerid, count);
@@ -6528,8 +6532,7 @@ int32_t field::toss_dice(uint16_t step, effect * reason_effect, uint8_t reason_p
 		e.reason = 0;
 		e.reason_effect = reason_effect;
 		e.reason_player = reason_player;
-		for(int32_t i = 0; i < 5; ++i)
-			core.dice_result[i] = 0;
+		memset(core.dice_result, 0, sizeof(core.dice_result));
 		auto pr = effects.continuous_effect.equal_range(EFFECT_TOSS_DICE_REPLACE);
 		for(auto eit = pr.first; eit != pr.second;) {
 			effect* pe = eit->second;
