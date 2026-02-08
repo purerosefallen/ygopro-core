@@ -116,7 +116,7 @@ project "ocgcore"
             "-s EXIT_RUNTIME=1",
             "-s ENVIRONMENT=web,worker,node", 
             "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", 
-            "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\",\"_exit\"]", 
+            "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\"]", 
             "-s ALLOW_TABLE_GROWTH=1", 
             "-s ALLOW_MEMORY_GROWTH=1",
         }
