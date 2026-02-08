@@ -107,7 +107,7 @@ project "ocgcore"
 
     filter "platforms:wasm"
         targetextension ".wasm"
-        linkoptions { "-s MODULARIZE=1", "-s EXPORT_NAME=\"createOcgcore\"", "--no-entry", "-s ENVIRONMENT=web,node", "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\"]", "-s ALLOW_TABLE_GROWTH=1", "-s ALLOW_MEMORY_GROWTH=1", "-o ../build/bin/wasm/Release/libocgcore.js" }
+        linkoptions { "-s MODULARIZE=1", "-s EXPORT_NAME=\"createOcgcore\"", "--no-entry", "-s EXIT_RUNTIME=1", "-s ENVIRONMENT=web,node", "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\",\"_exit\"]", "-s ALLOW_TABLE_GROWTH=1", "-s ALLOW_MEMORY_GROWTH=1", "-o ../build/bin/wasm/Release/libocgcore.js" }
 
 if not WASM and SQLITE3_DIR and os.isdir(SQLITE3_DIR) then
 project "sqlite3"
