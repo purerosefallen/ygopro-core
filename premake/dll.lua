@@ -119,6 +119,9 @@ project "ocgcore"
             "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\"]", 
             "-s ALLOW_TABLE_GROWTH=1", 
             "-s ALLOW_MEMORY_GROWTH=1",
+            "-s ASSERTIONS=0",
+            "-s SAFE_HEAP=0",
+            "-s DEMANGLE_SUPPORT=0",
         }
         linkoptions(wasmLinkOptions)
 
