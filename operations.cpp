@@ -5330,6 +5330,14 @@ int32_t field::select_synchro_material(int16_t step, uint8_t playerid, card* pca
 	case 0: {
 		if(core.select_cards.size() == 0)
 			return TRUE;
+		if(core.summon_cancelable == FALSE && mg && min == max && mg->container.size() == min + 1) {
+			group* pgroup = pduel->new_group();
+            pgroup->container.insert(mg->container.begin(), mg->container.end());
+			pduel->lua->add_param(pgroup, PARAM_TYPE_GROUP);
+			pduel->restore_assumes();
+			core.limit_tuner = 0;
+			return TRUE;
+		}
 		pduel->write_buffer8(MSG_HINT);
 		pduel->write_buffer8(HINT_SELECTMSG);
 		pduel->write_buffer8(playerid);
