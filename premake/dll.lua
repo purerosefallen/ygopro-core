@@ -112,12 +112,16 @@ project "ocgcore"
         local wasmLinkOptions = { 
             "-s MODULARIZE=1", 
             "-s EXPORT_NAME=\"createOcgcore\"", 
-            "--no-entry", 
+            "--no-entry",
+            "-s EXIT_RUNTIME=1",
             "-s ENVIRONMENT=web,worker,node", 
             "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"addFunction\",\"removeFunction\"]", 
             "-s EXPORTED_FUNCTIONS=[\"_malloc\",\"_free\"]", 
             "-s ALLOW_TABLE_GROWTH=1", 
             "-s ALLOW_MEMORY_GROWTH=1",
+            "-s ASSERTIONS=0",
+            "-s SAFE_HEAP=0",
+            "-s DEMANGLE_SUPPORT=0",
         }
         linkoptions(wasmLinkOptions)
 
