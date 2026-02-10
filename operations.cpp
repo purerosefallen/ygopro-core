@@ -2708,8 +2708,10 @@ int32_t field::special_summon_rule(uint16_t step, uint8_t sumplayer, card* targe
 		info.limit_link_maxc = core.limit_link_maxc;
 		target->filter_spsummon_procedure(sumplayer, &eset, summon_type, info);
 		target->filter_spsummon_procedure_g(sumplayer, &eset);
-		if(!eset.size())
-			return TRUE;
+		if(!eset.size()) {
+			core.units.begin()->step = 17;
+			return FALSE;
+		}
 		core.select_effects.clear();
 		core.select_options.clear();
 		for(effect_set::size_type i = 0; i < eset.size(); ++i) {
@@ -2759,8 +2761,10 @@ int32_t field::special_summon_rule(uint16_t step, uint8_t sumplayer, card* targe
 		return FALSE;
 	}
 	case 2: {
-		if(!returns.ivalue[0])
-			return TRUE;
+		if(!returns.ivalue[0]) {
+			core.units.begin()->step = 17;
+			return FALSE;
+		}
 		effect_set eset;
 		target->filter_effect(EFFECT_SPSUMMON_COST, &eset);
 		if(eset.size()) {
@@ -2979,6 +2983,27 @@ int32_t field::special_summon_rule(uint16_t step, uint8_t sumplayer, card* targe
 			adjust_all();
 			core.hint_timing[sumplayer] |= TIMING_SPSUMMON;
 			add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, FALSE, 0);
+		}
+		return TRUE;
+	}
+	case 18: {
+		if(core.limit_tuner) {
+			core.limit_tuner = 0;
+		}
+		if(core.limit_syn) {
+			pduel->delete_group(core.limit_syn);
+			core.limit_syn = 0;
+		}
+		if(core.limit_xyz) {
+			pduel->delete_group(core.limit_xyz);
+			core.limit_xyz = 0;
+		}
+		if(core.limit_link_card) {
+			core.limit_link_card = 0;
+		}
+		if(core.limit_link) {
+			pduel->delete_group(core.limit_link);
+			core.limit_link = 0;
 		}
 		return TRUE;
 	}
