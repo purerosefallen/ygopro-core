@@ -98,11 +98,18 @@ build_linux_x32:
   before_script:
     - apt update; apt -y install gcc-multilib g++-multilib
 
-build_wasm:
+build_wasm_cjs:
   extends: .build_unix
   variables:
     PREMAKE_OS: emscripten
-    BUILD_TYPE: wasm
+    BUILD_TYPE: wasm_cjs
+  image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian12
+
+build_wasm_esm:
+  extends: .build_unix
+  variables:
+    PREMAKE_OS: emscripten
+    BUILD_TYPE: wasm_esm
   image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian12
 
 .build_windows:
@@ -183,7 +190,8 @@ upload_to_minio:
     - build_windows_x32
     - build_windows_x64
     - build_macos
-    - build_wasm
+    - build_wasm_cjs
+    - build_wasm_esm
   tags: 
     - linux
   script:
