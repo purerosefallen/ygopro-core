@@ -312,7 +312,7 @@ struct processor {
 	uint32_t set_group_used_zones{ 0 };
 	uint8_t set_group_seq[7]{};
 	uint8_t dice_result[5]{};
-	uint8_t coin_result[MAX_COIN_COUNT]{};
+	uint32_t coin_result{ 0 };
 	int32_t coin_count{ 0 };
 	bool is_target_ready{ false };
 	bool is_gemini_summoning{ false };
@@ -387,6 +387,7 @@ public:
 	void set_control(card* pcard, uint8_t playerid, uint16_t reset_phase, uint8_t reset_count);
 
 	int32_t get_pzone_sequence(uint8_t pseq) const;
+	const card_vector* get_field_vector(uint8_t playerid, uint8_t location) const;
 	card* get_field_card(uint8_t playerid, uint32_t general_location, uint8_t sequence) const;
 	int32_t is_location_useable(uint8_t playerid, uint32_t general_location, uint8_t sequence) const;
 	int32_t get_useable_count(card* pcard, uint8_t playerid, uint8_t location, uint8_t uplayer, uint32_t reason, uint32_t zone = 0xff, uint32_t* list = nullptr);
