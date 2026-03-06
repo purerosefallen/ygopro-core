@@ -237,3 +237,13 @@ deploy_888_wasm:
     SERVER_PATH: '~/srvpro2/888/wasm/'
   only:
     - '888'
+
+deploy_8888_wasm:
+  extends: .deploy_to_server
+  dependencies:
+    - build_wasm_cjs
+  variables:
+    FROM_PATH: 'dist/wasm_cjs/'
+    SERVER_PATH: '~/srvpro2/8888/wasm/'
+  only:
+    - 'develop'
