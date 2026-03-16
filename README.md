@@ -1,4 +1,4 @@
-# YGOPro script engine.
+# YGOPro script engine
 
 ## Introduction
 The core logic and lua script processor of YGOPro. This library can be made external of the project and used to power server technologies. It maintains a state engine that is manipulated by Lua scripts using manipulation functions it exposes.
@@ -14,7 +14,7 @@ The 3 functions need to be provided to the core so it can get card and database 
 Interface provided returns scripts based on number that corresponds to a lua file, send in a string.
 
 - `void set_card_reader(card_reader f);`  
-Interface provided function that provides database information from the `data` table of `cards.cdb`.
+Interface provided function that provides database information from the `datas` table of `cards.cdb`.
 
 - `void set_message_handler(message_handler f);`  
 Interface provided function that handles error messages.
@@ -49,7 +49,7 @@ Add a card to the duel state.
 - `void new_tag_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t location);`  
 Add a new card to the tag pool.
 
-- `int32_t query_field_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint32_t query_flag, byte* buf, int32_t use_cache);`  
+- `int32_t query_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint8_t sequence, uint32_t query_flag, byte* buf, int32_t use_cache);`  
 Get a card in a specific location.
 
 - `int32_t query_field_count(intptr_t pduel, uint8_t playerid, uint8_t location);`  
