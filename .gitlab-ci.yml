@@ -256,3 +256,13 @@ deploy_8888_wasm:
     SERVER_PATH: '~/srvpro2/8888/wasm/'
   only:
     - 'develop'
+
+deploy_2337:
+  extends: .deploy_to_server
+  dependencies:
+    - build_wasm_cjs
+  variables:
+    FROM_PATH: 'dist/wasm_cjs/'
+    SERVER_PATH: '~/srvpro2/2337/wasm/'
+  only:
+    - 'pend-free'
