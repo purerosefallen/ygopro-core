@@ -89,7 +89,7 @@ workspace "ocgcoredll"
 
     filter "platforms:wasm_cjs or platforms:wasm_esm"
         toolset "emcc"
-        defines { "LUA_USE_C89" }
+        -- defines { "LUA_USE_C89" }
         pic "On"
 
 filter {}

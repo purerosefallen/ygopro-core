@@ -195,10 +195,19 @@ upload_to_minio:
     - build_wasm_esm
   tags: 
     - linux
+  variables:
+    MINIO_DIR: 'libocgcore-koishi'
   script:
-    - aws s3 --endpoint=https://minio.moenext.com:9000 sync --delete dist/ s3://mycard/libocgcore-koishi
+    - aws s3 --endpoint=https://minio.moenext.com:9000 sync --delete dist/ s3://mycard/$MINIO_DIR
   only:
     - master
+
+upload_to_minio_develop:
+  extends: upload_to_minio
+  variables:
+    MINIO_DIR: 'libocgcore-koishi-develop'
+  only:
+    - develop
 
 .deploy_to_server:
   stage: deploy
@@ -237,3 +246,13 @@ deploy_888_wasm:
     SERVER_PATH: '~/srvpro2/888/wasm/'
   only:
     - '888'
+
+deploy_8888_wasm:
+  extends: .deploy_to_server
+  dependencies:
+    - build_wasm_cjs
+  variables:
+    FROM_PATH: 'dist/wasm_cjs/'
+    SERVER_PATH: '~/srvpro2/8888/wasm/'
+  only:
+    - 'develop'
