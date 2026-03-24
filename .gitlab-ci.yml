@@ -83,6 +83,16 @@ mat_macos:
 build_linux_x64:
   extends: .build_unix
 
+build_android:
+  extends: .build_unix
+  variables:
+    BUILD_TYPE: android_arm64
+    NDK_DIR: android-ndk-r23b
+    ANDROID_API_LEVEL: '26'
+  before_script:
+    - wget -O android-ndk-r23b-linux.zip https://mat-cacher.moenext.com/https://dl.google.com/android/repository/android-ndk-r23b-linux.zip
+    - 7z x -y android-ndk-r23b-linux.zip
+
 build_linux_x64_no_longjmp:
   extends: .build_unix
   except: []
@@ -186,6 +196,7 @@ build_macos:
 upload_to_minio:
   stage: deploy
   dependencies:
+    - build_android
     - build_linux_x32
     - build_linux_x64
     - build_windows_x32
