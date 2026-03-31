@@ -24,6 +24,12 @@ project "ocgcore"
     filter "system:macosx"
         defines { "LUA_USE_MACOSX" }
 
+    filter "system:android"
+        defines { "LUA_USE_POSIX" }
+        if OCGCORE_DYNAMIC then
+            pic "On"
+        end
+
     filter "system:linux"
         defines { "LUA_USE_LINUX" }
         if OCGCORE_DYNAMIC then

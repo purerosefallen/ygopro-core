@@ -1,5 +1,7 @@
 newoption { trigger = "lua-dir", description = "", value = "PATH", default = "./lua" }
 newoption { trigger = "sqlite3-dir", description = "", value = "PATH" }
+newoption { trigger = "ndk-dir", category = "YGOPro - android", description = "", value = "PATH" }
+newoption { trigger = "android-api-level", category = "YGOPro - android", description = "", value = "LEVEL", default = "26" }
 newoption { trigger = "no-longjmp", description = "Disable use of longjmp for error handling in Lua" }
 
 boolOptions = {
@@ -21,6 +23,52 @@ end
 
 SQLITE3_DIR=GetParam("sqlite3-dir")
 USE_LONGJMP=not GetParam("no-longjmp")
+ANDROID_NDK_DIR=GetParam("ndk-dir")
+
+function QuoteIfNeeded(value)
+    if string.find(value, " ", 1, true) then
+        return "\"" .. value .. "\""
+    end
+    return value
+end
+
+function FindAndroidToolchainBin(ndkDir)
+    local prebuiltDir = path.join(ndkDir, "toolchains/llvm/prebuilt")
+    local prebuilts = os.matchdirs(path.join(prebuiltDir, "*"))
+    table.sort(prebuilts)
+    if #prebuilts == 0 then
+        error("Android NDK toolchain not found under " .. prebuiltDir)
+    end
+    return path.join(prebuilts[1], "bin")
+end
+
+ANDROID_ENABLED=false
+ANDROID_API_LEVEL_TEXT=GetParam("android-api-level") or "26"
+ANDROID_API_LEVEL=tonumber(ANDROID_API_LEVEL_TEXT)
+if not ANDROID_API_LEVEL then
+    error("Invalid android api level: " .. ANDROID_API_LEVEL_TEXT)
+end
+if ANDROID_NDK_DIR then
+    ANDROID_NDK_DIR=path.getabsolute(ANDROID_NDK_DIR)
+    if not os.isdir(ANDROID_NDK_DIR) then
+        error("Android NDK directory not found: " .. ANDROID_NDK_DIR)
+    end
+    ANDROID_ENABLED=true
+    ANDROID_TOOLCHAIN_BIN=FindAndroidToolchainBin(ANDROID_NDK_DIR)
+    ANDROID_TARGET="aarch64-linux-android" .. ANDROID_API_LEVEL
+    premake.override(premake.tools.clang, "gettoolname", function(base, cfg, tool)
+        if cfg.system == premake.ANDROID then
+            if tool == "cc" then
+                return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "clang")) .. " --target=" .. ANDROID_TARGET
+            elseif tool == "cxx" then
+                return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "clang++")) .. " --target=" .. ANDROID_TARGET
+            elseif tool == "ar" then
+                return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "llvm-ar"))
+            end
+        end
+        return base(cfg, tool)
+    end)
+end
 
 function ApplyBoolean(param)
     if GetParam(param) then
@@ -28,12 +76,17 @@ function ApplyBoolean(param)
     end
 end
 
+local workspacePlatforms = { "x64", "x32", "arm64", "wasm_cjs", "wasm_esm" }
+if ANDROID_ENABLED then
+    table.insert(workspacePlatforms, "android_arm64")
+end
+
 workspace "ocgcoredll"
     location "build"
     language "C++"
     cppdialect "C++14"
     configurations { "Release", "Debug" }
-    platforms { "x64", "x32", "arm64", "wasm_cjs", "wasm_esm" }
+    platforms(workspacePlatforms)
 
     if USE_LONGJMP then
         defines { "LUA_USE_LONGJMP" }
@@ -51,6 +104,12 @@ workspace "ocgcoredll"
 
     filter "platforms:arm64"
         architecture "ARM64"
+
+    filter "platforms:android_arm64"
+        architecture "ARM64"
+        system "android"
+        toolset "clang"
+        pic "On"
 
     filter "configurations:Release"
         optimize "Speed"
@@ -86,6 +145,9 @@ workspace "ocgcoredll"
         if USE_LONGJMP then
             linkoptions { "-static-libstdc++", "-static-libgcc" }
         end
+
+    filter { "system:android", "language:C++" }
+        linkoptions { "-static-libstdc++" }
 
     filter "platforms:wasm_cjs or platforms:wasm_esm"
         toolset "emcc"
