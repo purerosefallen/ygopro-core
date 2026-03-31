@@ -20,8 +20,8 @@ mat_common:
     - wget -O - https://mat-cacher.moenext.com/https://www.lua.org/ftp/lua-5.4.8.tar.gz | tar zfx -
     - mv lua-5.4.8 lua
     - cp premake/lua.lua lua/premake5.lua
-    - wget -O - https://mat-cacher.moenext.com/https://www.sqlite.org/2025/sqlite-autoconf-3500100.tar.gz | tar zfx -
-    - mv sqlite-autoconf-3500100 sqlite3
+    - wget -O - https://mat-cacher.moenext.com/https://www.sqlite.org/2026/sqlite-autoconf-3510300.tar.gz | tar zfx -
+    - mv sqlite-autoconf-3510300 sqlite3
   artifacts:
     paths:
       - lua
@@ -34,8 +34,8 @@ mat_windows:
     - linux
   script:
     # premake5.exe
-    - wget https://cdn02.moecube.com:444/premake5-built/premake-5.0.0-beta7-windows.zip
-    - 7z x -y premake-5.0.0-beta7-windows.zip
+    - wget https://cdn02.moecube.com:444/premake5-built/premake-5.0.0-beta8-windows.zip
+    - 7z x -y premake-5.0.0-beta8-windows.zip
   artifacts:
     paths:
       - premake5.exe
@@ -46,7 +46,7 @@ mat_macos:
   tags:
     - linux
   script:
-    - wget -O - https://cdn02.moecube.com:444/premake5-built/premake-5.0.0-beta7-macosx.tar.gz | tar zfx -
+    - wget -O - https://cdn02.moecube.com:444/premake5-built/premake-5.0.0-beta8-macosx.tar.gz | tar zfx -
     - chmod +x premake5
   artifacts:
     paths:
@@ -82,6 +82,16 @@ mat_macos:
 
 build_linux_x64:
   extends: .build_unix
+
+build_android:
+  extends: .build_unix
+  variables:
+    BUILD_TYPE: android_arm64
+    NDK_DIR: android-ndk-r23b
+    ANDROID_API_LEVEL: '26'
+  before_script:
+    - wget -O android-ndk-r23b-linux.zip https://mat-cacher.moenext.com/https://dl.google.com/android/repository/android-ndk-r23b-linux.zip
+    - 7z x -y android-ndk-r23b-linux.zip
 
 build_linux_x64_no_longjmp:
   extends: .build_unix
@@ -186,6 +196,7 @@ build_macos:
 upload_to_minio:
   stage: deploy
   dependencies:
+    - build_android
     - build_linux_x32
     - build_linux_x64
     - build_windows_x32
