@@ -122,6 +122,9 @@ workspace "ocgcoredll"
         systemversion "latest"
         startproject "ocgcore"
 
+    filter { "system:windows", "action:vs2026" }
+        toolset "v143"
+
     filter { "configurations:Release", "action:vs*" }
         linktimeoptimization "On"
         staticruntime "On"
