@@ -132,13 +132,13 @@ build_wasm_esm:
     - vs
   before_script:
     - copy premake\dll.lua dll.lua
-    - '.\premake5.exe vs2019 --file=dll.lua --sqlite3-dir=sqlite3'
+    - '.\premake5.exe vs2026 --file=dll.lua --sqlite3-dir=sqlite3'
     - mkdir dist
 
 build_windows_x32:
   extends: .build_windows
   script:
-    - cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\msbuild.exe" build\ocgcoredll.sln /t:Build /p:Configuration=Release /p:Platform=Win32'
+    - cmd /c '"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\msbuild.exe" build\ocgcoredll.slnx /t:Build /p:Configuration=Release /p:Platform=Win32'
     - mkdir dist\x32
     - copy build\bin\x32\Release\ocgcore.dll dist\x32\ocgcore.dll
     - copy build\bin\x32\Release\sqlite3.dll dist\x32\sqlite3.dll
@@ -146,7 +146,7 @@ build_windows_x32:
 build_windows_x64:
   extends: .build_windows
   script:
-    - cmd /c '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\msbuild.exe" build\ocgcoredll.sln /t:Build /p:Configuration=Release /p:Platform=x64'
+    - cmd /c '"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\msbuild.exe" build\ocgcoredll.slnx /t:Build /p:Configuration=Release /p:Platform=x64'
     - mkdir dist\x64
     - copy build\bin\x64\Release\ocgcore.dll dist\x64\ocgcore.dll
     - copy build\bin\x64\Release\sqlite3.dll dist\x64\sqlite3.dll
