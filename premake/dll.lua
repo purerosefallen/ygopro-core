@@ -1,7 +1,9 @@
-newoption { trigger = "lua-dir", description = "", value = "PATH", default = "./lua" }
+LUA_DIR = "./lua"
+
+newoption { trigger = "lua-dir", description = "", value = "PATH" }
 newoption { trigger = "sqlite3-dir", description = "", value = "PATH" }
 newoption { trigger = "ndk-dir", category = "YGOPro - android", description = "", value = "PATH" }
-newoption { trigger = "android-api-level", category = "YGOPro - android", description = "", value = "LEVEL", default = "26" }
+newoption { trigger = "android-api-level", category = "YGOPro - android", description = "", value = "LEVEL" }
 newoption { trigger = "no-longjmp", description = "Disable use of longjmp for error handling in Lua" }
 
 boolOptions = {
@@ -16,9 +18,9 @@ function GetParam(param)
     return _OPTIONS[param] or os.getenv(string.upper(string.gsub(param,"-","_")))
 end
 
-LUA_DIR=GetParam("lua-dir")
+LUA_DIR = GetParam("lua-dir") or LUA_DIR
 if not os.isdir(LUA_DIR) then
-    LUA_DIR="../lua"
+    LUA_DIR = "../lua"
 end
 
 SQLITE3_DIR=GetParam("sqlite3-dir")
