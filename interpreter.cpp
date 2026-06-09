@@ -14,12 +14,14 @@
 #include "ocgapi.h"
 #include "interpreter.h"
 
-interpreter::interpreter(duel* pd, bool enable_unsafe_libraries)
+interpreter::interpreter(duel* pd, bool enable_unsafe_libraries, uint32_t create_flags)
 	: coroutines(256), pduel(pd), enable_unsafe_feature(enable_unsafe_libraries) {
 	mem_tracker = new LuaMemTracker(YGOPRO_LUA_MEMORY_SIZE);
 	lua_state = lua_newstate(LuaMemTracker::AllocThunk, mem_tracker);
 	current_state = lua_state;
 	std::memcpy(lua_getextraspace(lua_state), &pd, LUA_EXTRASPACE); //set_duel_info
+	if (create_flags & OCGCORE_CREATE_ENABLE_LUA_COVERAGE)
+		lua_coverage.enable(lua_state);
 	//Initial
 #ifdef YGOPRO_NO_LUA_SAFE
 	luaL_openlibs(lua_state);
@@ -698,6 +700,8 @@ int32_t interpreter::call_coroutine(int32_t f, uint32_t param_count, int32_t* yi
 	lua_State* rthread;
 	if (it == coroutines.end()) {
 		rthread = lua_newthread(lua_state);
+		std::memcpy(lua_getextraspace(rthread), lua_getextraspace(lua_state), LUA_EXTRASPACE);
+		lua_coverage.install_hook(rthread);
 		const auto threadref = luaL_ref(lua_state, LUA_REGISTRYINDEX);
 		function2value(rthread, f);
 		if(!lua_isfunction(rthread, -1)) {

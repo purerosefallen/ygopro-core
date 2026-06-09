@@ -54,6 +54,9 @@ enum LuaParamType : int32_t {
 #define MASTER_RULE_2020	5	//Master Rule 2020
 #define CURRENT_RULE		5
 
+// Duel creation flags
+#define OCGCORE_CREATE_ENABLE_LUA_COVERAGE	0x00000001u
+
 //Locations
 #define LOCATION_DECK		0x01U
 #define LOCATION_HAND		0x02U
