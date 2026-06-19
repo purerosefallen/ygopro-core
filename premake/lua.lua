@@ -18,5 +18,8 @@ project "lua"
     filter "system:macosx"
         defines { "LUA_USE_MACOSX" }
 
+    filter "system:android"
+        defines { "LUA_USE_POSIX" }
+
     filter "system:linux"
         defines { "LUA_USE_LINUX" }

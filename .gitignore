@@ -2,6 +2,7 @@
 /build/
 /lua
 /temp/
+/.emsdk/
 /premake-5/
 /premake5.exe
 /premake5
@@ -11,3 +12,4 @@
 /test-wasm
 /wasm
 /dist
+/research
