@@ -7,6 +7,8 @@ The core logic and lua script processor of YGOPro. This library can be made exte
 In most cases, what you want to compile is the main program of YGOPro. You should refer to the main YGOPro project's [wiki](https://github.com/Fluorohydride/ygopro/wiki).
 If you want to compile the dynamic link library of this repository (ocgcore.dll), you can refer to [this script](https://github.com/Fluorohydride/ygopro-core/blob/master/.github/workflows/build.yml).
 
+For WebAssembly builds, use Emscripten 3.1.1 through 3.1.7.
+
 ## Exposed Functions
 
 The 3 functions need to be provided to the core so it can get card and database information.
@@ -75,4 +77,3 @@ The default script reader using `fread`.
 - `libduel.cpp`
 - `libeffect.cpp`
 - `libgroup.cpp`
-
