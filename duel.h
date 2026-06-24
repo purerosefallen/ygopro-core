@@ -45,7 +45,7 @@ public:
 
 	std::unordered_map<std::string, std::string> registry;
 
-	duel();
+	explicit duel(uint32_t create_flags = 0);
 	~duel();
 	void clear();
 	
