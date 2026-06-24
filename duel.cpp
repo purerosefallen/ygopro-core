@@ -15,8 +15,8 @@
 #include "ocgapi.h"
 #include "buffer.h"
 
-duel::duel() {
-	lua = new interpreter(this, false);
+duel::duel(uint32_t create_flags) {
+	lua = new interpreter(this, false, create_flags);
 	game_field = new field(this);
 	game_field->temp_card = new_card(TEMP_CARD_ID);
 	game_field->rose_card = 0;

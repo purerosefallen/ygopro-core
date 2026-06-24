@@ -17,6 +17,7 @@
 #include <vector>
 #include <cstdio>
 #include "LuaMemTracker.h"
+#include "lua_coverage.h"
 
 class card;
 struct card_data;
@@ -46,8 +47,9 @@ public:
 	bool enable_unsafe_feature{};
 	int32_t disable_action_check{};
 	int32_t preloaded{};
+	lua_coverage_state lua_coverage;
 
-	explicit interpreter(duel* pd, bool enable_unsafe_libraries);
+	explicit interpreter(duel* pd, bool enable_unsafe_libraries, uint32_t create_flags = 0);
 	~interpreter();
 
 	void register_card(card* pcard);
