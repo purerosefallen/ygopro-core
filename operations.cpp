@@ -2894,7 +2894,7 @@ int32_t field::special_summon_rule(uint16_t step, uint8_t sumplayer, card* targe
 		target->set_status(STATUS_SUMMONING, TRUE);
 		pduel->write_buffer8(MSG_SPSUMMONING);
 		pduel->write_buffer32(target->data.code);
-		pduel->write_buffer32(target->get_info_location());
+		pduel->write_buffer32(target->get_public_info_location());
 		return FALSE;
 	}
 	case 6: {
@@ -3134,10 +3134,7 @@ int32_t field::special_summon_rule(uint16_t step, uint8_t sumplayer, card* targe
 		pcard->set_status(STATUS_SUMMONING, TRUE);
 		pduel->write_buffer8(MSG_SPSUMMONING);
 		pduel->write_buffer32(pcard->data.code);
-		pduel->write_buffer8(pcard->current.controler);
-		pduel->write_buffer8(pcard->current.location);
-		pduel->write_buffer8(pcard->current.sequence);
-		pduel->write_buffer8(pcard->current.position);
+		pduel->write_buffer32(pcard->get_public_info_location());
 		if(pgroup->it != pgroup->container.end())
 			core.units.begin()->step = 22;
 		return FALSE;
@@ -3339,7 +3336,7 @@ int32_t field::special_summon_step(uint16_t step, group* targets, card* target, 
 	case 2: {
 		pduel->write_buffer8(MSG_SPSUMMONING);
 		pduel->write_buffer32(target->data.code);
-		pduel->write_buffer32(target->get_info_location());
+		pduel->write_buffer32(target->get_public_info_location());
 		return FALSE;
 	}
 	case 3: {
@@ -4212,7 +4209,7 @@ int32_t field::send_to(uint16_t step, group * targets, effect * reason_effect, u
 			}
 			move_card(playerid, pcard, dest, seq);
 			pcard->current.position = pcard->sendto_param.position;
-			pduel->write_buffer32(pcard->get_info_location());
+			pduel->write_buffer32(pcard->get_public_info_location());
 			pduel->write_buffer32(pcard->current.reason);
 		}
 		if(core.global_flag & GLOBALFLAG_DECK_REVERSE_CHECK) {
@@ -4267,7 +4264,7 @@ int32_t field::send_to(uint16_t step, group * targets, effect * reason_effect, u
 		}
 		move_card(pcard->current.controler, pcard, LOCATION_SZONE, seq);
 		pcard->current.position = POS_FACEUP;
-		pduel->write_buffer32(pcard->get_info_location());
+		pduel->write_buffer32(pcard->get_public_info_location());
 		pduel->write_buffer32(pcard->current.reason);
 		pcard->set_status(STATUS_LEAVE_CONFIRMED, FALSE);
 		pcard->set_status(STATUS_FLIP_SUMMONING, FALSE);
@@ -4754,7 +4751,7 @@ int32_t field::move_to_field(uint16_t step, card* target, uint32_t enable, uint3
 		move_card(playerid, target, location, target->temp.sequence, pzone);
 		target->current.position = returns.ivalue[0];
 		target->set_status(STATUS_LEAVE_CONFIRMED, FALSE);
-		pduel->write_buffer32(target->get_info_location());
+		pduel->write_buffer32(target->get_public_info_location());
 		pduel->write_buffer32(target->current.reason);
 		if(target->current.location != LOCATION_MZONE) {
 			if(target->equiping_cards.size()) {
@@ -6570,40 +6567,6 @@ int32_t field::toss_dice(uint16_t step, effect * reason_effect, uint8_t reason_p
 	case 1: {
 		raise_event(nullptr, EVENT_TOSS_DICE, reason_effect, 0, reason_player, playerid, count1 + (count2 << 16));
 		process_instant_event();
-		return TRUE;
-	}
-	}
-	return TRUE;
-}
-int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
-	switch (step) {
-	case 0: {
-		pduel->write_buffer8(MSG_ROCK_PAPER_SCISSORS);
-		pduel->write_buffer8(0);
-		return FALSE;
-	}
-	case 1: {
-		core.units.begin()->value1 = returns.ivalue[0];
-		pduel->write_buffer8(MSG_ROCK_PAPER_SCISSORS);
-		pduel->write_buffer8(1);
-		return FALSE;
-	}
-	case 2: {
-		int32_t hand0 = core.units.begin()->value1;
-		int32_t hand1 = returns.ivalue[0];
-		pduel->write_buffer8(MSG_HAND_RES);
-		pduel->write_buffer8(hand0 + (hand1 << 2));
-		if(hand0 == hand1) {
-			if(repeat) {
-				core.units.begin()->step = -1;
-				return FALSE;
-			} else
-				returns.ivalue[0] = PLAYER_NONE;
-		} else if((hand0 == 1 && hand1 == 2) || (hand0 == 2 && hand1 == 3) || (hand0 == 3 && hand1 == 1)) {
-			returns.ivalue[0] = 1;
-		} else {
-			returns.ivalue[0] = 0;
-		}
 		return TRUE;
 	}
 	}

@@ -50,6 +50,8 @@ uint32_t handle_message(void* pduel, uint32_t message_type);
 
 OCGCORE_API intptr_t create_duel(uint_fast32_t seed);
 OCGCORE_API intptr_t create_duel_v2(uint32_t seed_sequence[]);
+OCGCORE_API intptr_t create_duel_ex(uint_fast32_t seed, uint32_t create_flags);
+OCGCORE_API intptr_t create_duel_v2_ex(uint32_t seed_sequence[], uint32_t create_flags);
 OCGCORE_API void start_duel(intptr_t pduel, uint32_t options);
 OCGCORE_API void end_duel(intptr_t pduel);
 OCGCORE_API void set_player_info(intptr_t pduel, int32_t playerid, int32_t lp, int32_t startcount, int32_t drawcount);
@@ -74,5 +76,11 @@ OCGCORE_API int32_t get_registry_keys(intptr_t pduel, byte* out_buf);
 OCGCORE_API void clear_registry(intptr_t pduel);
 OCGCORE_API int32_t dump_registry(intptr_t pduel, byte* out_buf);
 OCGCORE_API void load_registry(intptr_t pduel, const byte* in_buf, int32_t in_len);
+OCGCORE_API int32_t get_lua_coverage_dump_size(intptr_t pduel, const char* name);
+OCGCORE_API int32_t dump_lua_coverage(intptr_t pduel, const char* name, byte* out_buf, int32_t out_len);
+OCGCORE_API int32_t get_all_lua_coverages_dump_size(intptr_t pduel);
+OCGCORE_API int32_t dump_all_lua_coverages(intptr_t pduel, byte* out_buf, int32_t out_len);
+OCGCORE_API void clear_lua_coverage(intptr_t pduel, const char* name);
+OCGCORE_API void clear_all_lua_coverages(intptr_t pduel);
 
 #endif /* OCGAPI_H_ */
