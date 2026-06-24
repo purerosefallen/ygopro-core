@@ -63,7 +63,10 @@ OCGCORE_API byte* default_script_reader(const char* script_name, int* slen) {
 	return buffer;
 }
 OCGCORE_API intptr_t create_duel(uint_fast32_t seed) {
-	duel* pduel = new duel();
+	return create_duel_ex(seed, 0);
+}
+OCGCORE_API intptr_t create_duel_ex(uint_fast32_t seed, uint32_t create_flags) {
+	duel* pduel = new duel(create_flags);
 	duel_set.insert(pduel);
 	pduel->random.seed(seed);
 	pduel->rng_version = 1;
@@ -71,7 +74,10 @@ OCGCORE_API intptr_t create_duel(uint_fast32_t seed) {
 	return (intptr_t)pduel;
 }
 OCGCORE_API intptr_t create_duel_v2(uint32_t seed_sequence[]) {
-	duel* pduel = new duel();
+	return create_duel_v2_ex(seed_sequence, 0);
+}
+OCGCORE_API intptr_t create_duel_v2_ex(uint32_t seed_sequence[], uint32_t create_flags) {
+	duel* pduel = new duel(create_flags);
 	duel_set.insert(pduel);
 	pduel->random.seed(seed_sequence, SEED_COUNT);
 	pduel->rng_version = 2;
@@ -468,4 +474,34 @@ OCGCORE_API void load_registry(intptr_t pduel, const byte* in_buf, int32_t in_le
 
 		d->registry[std::move(key)] = std::move(value);
 	}
+}
+OCGCORE_API int32_t get_lua_coverage_dump_size(intptr_t pduel, const char* name) {
+	if (!pduel || !name)
+		return 0;
+	return ((duel*)pduel)->lua->lua_coverage.get_dump_size(name);
+}
+OCGCORE_API int32_t dump_lua_coverage(intptr_t pduel, const char* name, byte* out_buf, int32_t out_len) {
+	if (!pduel || !name || !out_buf || out_len <= 0)
+		return 0;
+	return ((duel*)pduel)->lua->lua_coverage.dump(name, out_buf, out_len);
+}
+OCGCORE_API int32_t get_all_lua_coverages_dump_size(intptr_t pduel) {
+	if (!pduel)
+		return 0;
+	return ((duel*)pduel)->lua->lua_coverage.get_all_dump_size();
+}
+OCGCORE_API int32_t dump_all_lua_coverages(intptr_t pduel, byte* out_buf, int32_t out_len) {
+	if (!pduel || !out_buf || out_len <= 0)
+		return 0;
+	return ((duel*)pduel)->lua->lua_coverage.dump_all(out_buf, out_len);
+}
+OCGCORE_API void clear_lua_coverage(intptr_t pduel, const char* name) {
+	if (!pduel || !name)
+		return;
+	((duel*)pduel)->lua->lua_coverage.clear(name);
+}
+OCGCORE_API void clear_all_lua_coverages(intptr_t pduel) {
+	if (!pduel)
+		return;
+	((duel*)pduel)->lua->lua_coverage.clear_all();
 }
