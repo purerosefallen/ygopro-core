@@ -2,6 +2,7 @@
 /build/
 /lua
 /temp/
+/.emsdk/
 /premake-5/
 /premake5.exe
 /premake5
