@@ -44,9 +44,12 @@ uint32_t card::set_entity_code(uint32_t entity_code, bool remove_alias) {
 	return code;
 }
 uint32_t card::get_summon_info() {
+	if(temp.summon_info != UINT32_MAX) // prevent recursion, return the former value
+		return temp.summon_info;
 	effect_set effects;
 	effect_set effects2;
 	uint32_t res = summon_info;
+	temp.summon_info = res;
 	filter_effect(EFFECT_ADD_SUMMON_TYPE_KOISHI, &effects, FALSE);
 	filter_effect(EFFECT_REMOVE_SUMMON_TYPE_KOISHI, &effects);
 	filter_effect(EFFECT_CHANGE_SUMMON_TYPE_KOISHI, &effects2, FALSE);
@@ -56,13 +59,16 @@ uint32_t card::get_summon_info() {
 			res |= (effects[i]->get_value(this) & 0xff00ffff);
 		else
 			res &= ~(effects[i]->get_value(this) & 0xff00ffff);
+		temp.summon_info = res;
 	}
 	for (int32_t i = 0; i < effects2.size(); ++i) {
 		if (effects2[i]->code == EFFECT_CHANGE_SUMMON_TYPE_KOISHI)
 			res = (res & 0xff0000) | (effects2[i]->get_value(this) & 0xff00ffff);
 		else
 			res = ((effects2[i]->get_value(this) & 0xff) << 16) | (res & 0xff00ffff);
+		temp.summon_info = res;
 	}
+	temp.summon_info = UINT32_MAX;
 	return res;
 }
 
@@ -82,6 +88,8 @@ void card_state::init_state() {
 	level = UINT32_MAX;
 	rank = UINT32_MAX;
 	link = UINT32_MAX;
+	link_marker = UINT32_MAX;
+	summon_info = UINT32_MAX;
 	lscale = UINT32_MAX;
 	rscale = UINT32_MAX;
 	attribute = UINT32_MAX;
@@ -507,7 +515,6 @@ uint32_t card::get_another_code() {
 }
 int32_t card::is_set_card(uint32_t set_code) {
 	uint32_t code1 = get_code();
-	card_data dat1;
 	if (code1 == data.code) {
 		if (data.is_setcode(set_code))
 			return TRUE;
@@ -1317,19 +1324,27 @@ uint32_t card::get_rscale() {
 	return rscale;
 }
 uint32_t card::get_link_marker() {
+	if(temp.link_marker != UINT32_MAX) // prevent recursion, return the former value
+		return temp.link_marker;
 	effect_set effects;
 	effect_set effects2;
 	uint32_t link_marker = data.link_marker;
+	temp.link_marker = link_marker;
 	if(!(data.type & TYPE_LINK) || current.location == LOCATION_SZONE) {
 		link_marker = 0;
+		temp.link_marker = link_marker;
 		effect_set effects3;
 		filter_effect(EFFECT_LINK_SPELL_KOISHI, &effects3);
-		if(!effects3.size())
+		if(!effects3.size()) {
+			temp.link_marker = UINT32_MAX;
 			return 0;
+		}
 		for (int32_t i = 0; i < effects3.size(); ++i) {
 			card* ocard = effects3[i]->get_handler();
-			if (!(effects3[i]->type & EFFECT_TYPE_FIELD) || !(ocard && ocard->to_leave_fromex))
+			if (!(effects3[i]->type & EFFECT_TYPE_FIELD) || !(ocard && ocard->to_leave_fromex)) {
 				link_marker = effects3[i]->get_value(this);
+				temp.link_marker = link_marker;
+			}
 		}
 	}
 	filter_effect(EFFECT_ADD_LINK_MARKER_KOISHI, &effects, FALSE);
@@ -1341,12 +1356,15 @@ uint32_t card::get_link_marker() {
 			link_marker |= effects[i]->get_value(this);
 		else if (effects[i]->code == EFFECT_REMOVE_LINK_MARKER_KOISHI && (!(effects[i]->type & EFFECT_TYPE_FIELD) || !(ocard && ocard->to_leave_fromex)))
 			link_marker &= ~(effects[i]->get_value(this));
+		temp.link_marker = link_marker;
 	}
 	for (int32_t i = 0; i < effects2.size(); ++i) {
 		card* ocard = effects2[i]->get_handler();
 		if (!(effects2[i]->type & EFFECT_TYPE_FIELD) || !(ocard && ocard->to_leave_fromex))
 			link_marker = effects2[i]->get_value(this);
+		temp.link_marker = link_marker;
 	}
+	temp.link_marker = UINT32_MAX;
 	return link_marker;
 }
 uint32_t card::is_link_marker(uint32_t dir) {
@@ -3586,8 +3604,6 @@ int32_t card::is_can_be_special_summoned(effect* reason_effect, uint32_t sumtype
 	if(reason_effect->get_handler() == this)
 		reason_effect->status |= EFFECT_STATUS_SPSELF;
 	if(current.location == LOCATION_MZONE)
-		return FALSE;
-	if(current.location == LOCATION_REMOVED && (current.position & POS_FACEDOWN))
 		return FALSE;
 	if(is_affected_by_effect(EFFECT_REVIVE_LIMIT) && !is_status(STATUS_PROC_COMPLETE)) {
 		if((!nolimit && (current.location & (LOCATION_GRAVE | LOCATION_REMOVED | LOCATION_SZONE)))
