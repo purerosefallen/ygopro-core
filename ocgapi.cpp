@@ -28,13 +28,13 @@ static message_handler mhandler = default_message_handler;
 static byte buffer[0x100000];
 static std::set<duel*> duel_set;
 
-OCGCORE_API void set_script_reader(script_reader f) {
+void set_script_reader(script_reader f) {
 	sreader = f;
 }
-OCGCORE_API void set_card_reader(card_reader f) {
+void set_card_reader(card_reader f) {
 	creader = f;
 }
-OCGCORE_API void set_message_handler(message_handler f) {
+void set_message_handler(message_handler f) {
 	mhandler = f;
 }
 byte* read_script(const char* script_name, int* len) {
@@ -50,7 +50,7 @@ uint32_t read_card(uint32_t code, card_data* data) {
 uint32_t handle_message(void* pduel, uint32_t message_type) {
 	return mhandler((intptr_t)pduel, message_type);
 }
-OCGCORE_API byte* default_script_reader(const char* script_name, int* slen) {
+byte* default_script_reader(const char* script_name, int* slen) {
 	FILE *fp;
 	fp = std::fopen(script_name, "rb");
 	if (!fp)
@@ -62,10 +62,10 @@ OCGCORE_API byte* default_script_reader(const char* script_name, int* slen) {
 	*slen = (int)len;
 	return buffer;
 }
-OCGCORE_API intptr_t create_duel(uint_fast32_t seed) {
+intptr_t create_duel(uint_fast32_t seed) {
 	return create_duel_ex(seed, 0);
 }
-OCGCORE_API intptr_t create_duel_ex(uint_fast32_t seed, uint32_t create_flags) {
+intptr_t create_duel_ex(uint_fast32_t seed, uint32_t create_flags) {
 	duel* pduel = new duel(create_flags);
 	duel_set.insert(pduel);
 	pduel->random.seed(seed);
@@ -73,10 +73,10 @@ OCGCORE_API intptr_t create_duel_ex(uint_fast32_t seed, uint32_t create_flags) {
 	pduel->lua->preloaded = FALSE;
 	return (intptr_t)pduel;
 }
-OCGCORE_API intptr_t create_duel_v2(uint32_t seed_sequence[]) {
+intptr_t create_duel_v2(uint32_t seed_sequence[]) {
 	return create_duel_v2_ex(seed_sequence, 0);
 }
-OCGCORE_API intptr_t create_duel_v2_ex(uint32_t seed_sequence[], uint32_t create_flags) {
+intptr_t create_duel_v2_ex(uint32_t seed_sequence[], uint32_t create_flags) {
 	duel* pduel = new duel(create_flags);
 	duel_set.insert(pduel);
 	pduel->random.seed(seed_sequence, SEED_COUNT);
@@ -84,7 +84,7 @@ OCGCORE_API intptr_t create_duel_v2_ex(uint32_t seed_sequence[], uint32_t create
 	pduel->lua->preloaded = FALSE;
 	return (intptr_t)pduel;
 }
-OCGCORE_API void start_duel(intptr_t pduel, uint32_t options) {
+void start_duel(intptr_t pduel, uint32_t options) {
 	duel* pd = (duel*)pduel;
 	if(!pd->lua->preloaded) {
 		pd->lua->preloaded = TRUE;
@@ -133,14 +133,14 @@ OCGCORE_API void start_duel(intptr_t pduel, uint32_t options) {
 	}
 	pd->game_field->add_process(PROCESSOR_TURN, 0, 0, 0, 0, 0);
 }
-OCGCORE_API void end_duel(intptr_t pduel) {
+void end_duel(intptr_t pduel) {
 	duel* pd = (duel*)pduel;
 	if(duel_set.count(pd)) {
 		duel_set.erase(pd);
 		delete pd;
 	}
 }
-OCGCORE_API void set_player_info(intptr_t pduel, int32_t playerid, int32_t lp, int32_t startcount, int32_t drawcount) {
+void set_player_info(intptr_t pduel, int32_t playerid, int32_t lp, int32_t startcount, int32_t drawcount) {
 	if (!check_playerid(playerid))
 		return;
 	duel* pd = (duel*)pduel;
@@ -151,17 +151,17 @@ OCGCORE_API void set_player_info(intptr_t pduel, int32_t playerid, int32_t lp, i
 	if(drawcount >= 0)
 		pd->game_field->player[playerid].draw_count = drawcount;
 }
-OCGCORE_API void get_log_message(intptr_t pduel, char* buf) {
+void get_log_message(intptr_t pduel, char* buf) {
 	duel* pd = (duel*)pduel;
 	std::strncpy(buf, pd->strbuffer, sizeof pd->strbuffer - 1);
 	buf[sizeof pd->strbuffer - 1] = 0;
 }
-OCGCORE_API int32_t get_message(intptr_t pduel, byte* buf) {
+int32_t get_message(intptr_t pduel, byte* buf) {
 	int32_t len = ((duel*)pduel)->read_buffer(buf);
 	((duel*)pduel)->clear_buffer();
 	return len;
 }
-OCGCORE_API uint32_t process(intptr_t pduel) {
+uint32_t process(intptr_t pduel) {
 	duel* pd = (duel*)pduel;
 	uint32_t result = 0; 
 	do {
@@ -169,7 +169,7 @@ OCGCORE_API uint32_t process(intptr_t pduel) {
 	} while ((result & PROCESSOR_BUFFER_LEN) == 0 && (result & PROCESSOR_FLAG) == 0);
 	return result;
 }
-OCGCORE_API void new_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t playerid, uint8_t location, uint8_t sequence, uint8_t position) {
+void new_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t playerid, uint8_t location, uint8_t sequence, uint8_t position) {
 	if (!check_playerid(owner) || !check_playerid(playerid))
 		return;
 	duel* ptduel = (duel*)pduel;
@@ -191,7 +191,7 @@ OCGCORE_API void new_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t 
 		}
 	}
 }
-OCGCORE_API void new_tag_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t location) {
+void new_tag_card(intptr_t pduel, uint32_t code, uint8_t owner, uint8_t location) {
 	duel* ptduel = (duel*)pduel;
 	if(owner > 1 || !(location & (LOCATION_DECK | LOCATION_EXTRA)))
 		return;
@@ -220,7 +220,7 @@ OCGCORE_API void new_tag_card(intptr_t pduel, uint32_t code, uint8_t owner, uint
 * @param buf int32_t array
 * @return buffer length in bytes
 */
-OCGCORE_API int32_t query_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint8_t sequence, uint32_t query_flag, byte* buf, int32_t use_cache) {
+int32_t query_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint8_t sequence, uint32_t query_flag, byte* buf, int32_t use_cache) {
 	if (!check_playerid(playerid))
 		return LEN_FAIL;
 	duel* ptduel = (duel*)pduel;
@@ -245,7 +245,7 @@ OCGCORE_API int32_t query_card(intptr_t pduel, uint8_t playerid, uint8_t locatio
 		return LEN_EMPTY;
 	}
 }
-OCGCORE_API int32_t query_field_count(intptr_t pduel, uint8_t playerid, uint8_t location) {
+int32_t query_field_count(intptr_t pduel, uint8_t playerid, uint8_t location) {
 	duel* ptduel = (duel*)pduel;
 	if (!check_playerid(playerid))
 		return 0;
@@ -276,7 +276,7 @@ OCGCORE_API int32_t query_field_count(intptr_t pduel, uint8_t playerid, uint8_t 
 	}
 	return 0;
 }
-OCGCORE_API int32_t query_field_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint32_t query_flag, byte* buf, int32_t use_cache) {
+int32_t query_field_card(intptr_t pduel, uint8_t playerid, uint8_t location, uint32_t query_flag, byte* buf, int32_t use_cache) {
 	if (!check_playerid(playerid))
 		return LEN_FAIL;
 	duel* ptduel = (duel*)pduel;
@@ -323,7 +323,7 @@ OCGCORE_API int32_t query_field_card(intptr_t pduel, uint8_t playerid, uint8_t l
 	}
 	return (int32_t)(p - buf);
 }
-OCGCORE_API int32_t query_field_info(intptr_t pduel, byte* buf) {
+int32_t query_field_info(intptr_t pduel, byte* buf) {
 	duel* ptduel = (duel*)pduel;
 	byte* p = buf;
 	*p++ = MSG_RELOAD_FIELD;
@@ -367,16 +367,16 @@ OCGCORE_API int32_t query_field_info(intptr_t pduel, byte* buf) {
 	}
 	return (int32_t)(p - buf);
 }
-OCGCORE_API void set_responsei(intptr_t pduel, int32_t value) {
+void set_responsei(intptr_t pduel, int32_t value) {
 	((duel*)pduel)->set_responsei(value);
 }
-OCGCORE_API void set_responseb(intptr_t pduel, byte* buf) {
+void set_responseb(intptr_t pduel, byte* buf) {
 	((duel*)pduel)->set_responseb(buf);
 }
-OCGCORE_API int32_t preload_script(intptr_t pduel, const char* script_name) {
+int32_t preload_script(intptr_t pduel, const char* script_name) {
 	return ((duel*)pduel)->lua->load_script(script_name);
 }
-OCGCORE_API int32_t get_registry_value(intptr_t pduel, const char* key, byte* out_buf) {
+int32_t get_registry_value(intptr_t pduel, const char* key, byte* out_buf) {
 	if (!pduel || !key || !out_buf) return -1;
 
 	duel* d = (duel*)pduel;
@@ -388,7 +388,7 @@ OCGCORE_API int32_t get_registry_value(intptr_t pduel, const char* key, byte* ou
 	std::memcpy(out_buf, val.c_str(), val.size());
 	return static_cast<int32_t>(val.size());
 }
-OCGCORE_API void set_registry_value(intptr_t pduel, const char* key, const char* value) {
+void set_registry_value(intptr_t pduel, const char* key, const char* value) {
 	if (!pduel || !key) return;
 	duel* d = (duel*)pduel;
 	if (value) {
@@ -397,7 +397,7 @@ OCGCORE_API void set_registry_value(intptr_t pduel, const char* key, const char*
 		d->registry.erase(key);
 	}
 }
-OCGCORE_API int32_t get_registry_keys(intptr_t pduel, byte* out_buf) {
+int32_t get_registry_keys(intptr_t pduel, byte* out_buf) {
 	if (!pduel || !out_buf) return -1;
 
 	duel* d = (duel*)pduel;
@@ -416,13 +416,13 @@ OCGCORE_API int32_t get_registry_keys(intptr_t pduel, byte* out_buf) {
 
 	return ptr - out_buf;
 }
-OCGCORE_API void clear_registry(intptr_t pduel) {
+void clear_registry(intptr_t pduel) {
 	if (!pduel) return;
 	duel* d = (duel*)pduel;
 	d->registry.clear();
 }
 
-OCGCORE_API int32_t dump_registry(intptr_t pduel, byte* out_buf) {
+int32_t dump_registry(intptr_t pduel, byte* out_buf) {
 	if (!pduel || !out_buf) return -1;
 
 	duel* d = (duel*)pduel;
@@ -450,7 +450,7 @@ OCGCORE_API int32_t dump_registry(intptr_t pduel, byte* out_buf) {
 
 	return ptr - out_buf;  // 返回写入的总字节数
 }
-OCGCORE_API void load_registry(intptr_t pduel, const byte* in_buf, int32_t in_len) {
+void load_registry(intptr_t pduel, const byte* in_buf, int32_t in_len) {
 	if (!pduel || !in_buf || in_len <= 0) return;
 
 	duel* d = (duel*)pduel;
@@ -475,32 +475,32 @@ OCGCORE_API void load_registry(intptr_t pduel, const byte* in_buf, int32_t in_le
 		d->registry[std::move(key)] = std::move(value);
 	}
 }
-OCGCORE_API int32_t get_lua_coverage_dump_size(intptr_t pduel, const char* name) {
+int32_t get_lua_coverage_dump_size(intptr_t pduel, const char* name) {
 	if (!pduel || !name)
 		return 0;
 	return ((duel*)pduel)->lua->lua_coverage.get_dump_size(name);
 }
-OCGCORE_API int32_t dump_lua_coverage(intptr_t pduel, const char* name, byte* out_buf, int32_t out_len) {
+int32_t dump_lua_coverage(intptr_t pduel, const char* name, byte* out_buf, int32_t out_len) {
 	if (!pduel || !name || !out_buf || out_len <= 0)
 		return 0;
 	return ((duel*)pduel)->lua->lua_coverage.dump(name, out_buf, out_len);
 }
-OCGCORE_API int32_t get_all_lua_coverages_dump_size(intptr_t pduel) {
+int32_t get_all_lua_coverages_dump_size(intptr_t pduel) {
 	if (!pduel)
 		return 0;
 	return ((duel*)pduel)->lua->lua_coverage.get_all_dump_size();
 }
-OCGCORE_API int32_t dump_all_lua_coverages(intptr_t pduel, byte* out_buf, int32_t out_len) {
+int32_t dump_all_lua_coverages(intptr_t pduel, byte* out_buf, int32_t out_len) {
 	if (!pduel || !out_buf || out_len <= 0)
 		return 0;
 	return ((duel*)pduel)->lua->lua_coverage.dump_all(out_buf, out_len);
 }
-OCGCORE_API void clear_lua_coverage(intptr_t pduel, const char* name) {
+void clear_lua_coverage(intptr_t pduel, const char* name) {
 	if (!pduel || !name)
 		return;
 	((duel*)pduel)->lua->lua_coverage.clear(name);
 }
-OCGCORE_API void clear_all_lua_coverages(intptr_t pduel) {
+void clear_all_lua_coverages(intptr_t pduel) {
 	if (!pduel)
 		return;
 	((duel*)pduel)->lua->lua_coverage.clear_all();
