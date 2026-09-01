@@ -42,6 +42,8 @@ struct card_state {
 	uint32_t level{ 0 };
 	uint32_t rank{ 0 };
 	uint32_t link{ 0 };
+	uint32_t link_marker{ 0 };
+	uint32_t summon_info{ 0 };
 	uint32_t lscale{ 0 };
 	uint32_t rscale{ 0 };
 	uint32_t attribute{ 0 };
