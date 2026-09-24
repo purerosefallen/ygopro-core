@@ -388,6 +388,7 @@ enum LuaParamType : int32_t {
 #define HINT_MUSIC				21
 #define HINT_SOUND				22
 #define HINT_MUSIC_OGG			23
+#define HINT_LYRIC				24
 //
 #define CHINT_TURN				1
 #define CHINT_CARD				2
