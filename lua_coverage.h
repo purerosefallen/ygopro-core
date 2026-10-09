@@ -27,9 +27,9 @@ public:
 	void clear_all();
 
 	int32_t get_dump_size(const char* name) const;
-	int32_t dump(const char* name, byte* out_buf, int32_t out_len) const;
+	int32_t dump(const char* name, uint8_t* out_buf, int32_t out_len) const;
 	int32_t get_all_dump_size() const;
-	int32_t dump_all(byte* out_buf, int32_t out_len) const;
+	int32_t dump_all(uint8_t* out_buf, int32_t out_len) const;
 };
 
 #endif /* LUA_COVERAGE_H_ */

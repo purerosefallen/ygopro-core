@@ -63,16 +63,16 @@ OCGCORE_API int32_t preload_script(intptr_t pduel, const char* script_name);
 OCGCORE_API uint8_t* default_script_reader(const char* script_name, int* len);
 
 // koishi specific
-OCGCORE_API int32_t get_registry_value(intptr_t pduel, const char* key, byte* out_buf);
+OCGCORE_API int32_t get_registry_value(intptr_t pduel, const char* key, uint8_t* out_buf);
 OCGCORE_API void set_registry_value(intptr_t pduel, const char* key, const char* value);
-OCGCORE_API int32_t get_registry_keys(intptr_t pduel, byte* out_buf);
+OCGCORE_API int32_t get_registry_keys(intptr_t pduel, uint8_t* out_buf);
 OCGCORE_API void clear_registry(intptr_t pduel);
-OCGCORE_API int32_t dump_registry(intptr_t pduel, byte* out_buf);
-OCGCORE_API void load_registry(intptr_t pduel, const byte* in_buf, int32_t in_len);
+OCGCORE_API int32_t dump_registry(intptr_t pduel, uint8_t* out_buf);
+OCGCORE_API void load_registry(intptr_t pduel, const uint8_t* in_buf, int32_t in_len);
 OCGCORE_API int32_t get_lua_coverage_dump_size(intptr_t pduel, const char* name);
-OCGCORE_API int32_t dump_lua_coverage(intptr_t pduel, const char* name, byte* out_buf, int32_t out_len);
+OCGCORE_API int32_t dump_lua_coverage(intptr_t pduel, const char* name, uint8_t* out_buf, int32_t out_len);
 OCGCORE_API int32_t get_all_lua_coverages_dump_size(intptr_t pduel);
-OCGCORE_API int32_t dump_all_lua_coverages(intptr_t pduel, byte* out_buf, int32_t out_len);
+OCGCORE_API int32_t dump_all_lua_coverages(intptr_t pduel, uint8_t* out_buf, int32_t out_len);
 OCGCORE_API void clear_lua_coverage(intptr_t pduel, const char* name);
 OCGCORE_API void clear_all_lua_coverages(intptr_t pduel);
 

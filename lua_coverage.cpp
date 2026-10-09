@@ -93,7 +93,7 @@ int32_t lua_coverage_state::get_dump_size(const char* name) const {
 	return static_cast<int32_t>(it->second.line_hits.size() * sizeof(uint32_t) * 2);
 }
 
-int32_t lua_coverage_state::dump(const char* name, byte* out_buf, int32_t out_len) const {
+int32_t lua_coverage_state::dump(const char* name, uint8_t* out_buf, int32_t out_len) const {
 	const auto required = get_dump_size(name);
 	if (required <= 0)
 		return 0;
@@ -102,7 +102,7 @@ int32_t lua_coverage_state::dump(const char* name, byte* out_buf, int32_t out_le
 	const auto it = files.find(normalize_name(name));
 	if (it == files.end())
 		return 0;
-	byte* p = out_buf;
+	uint8_t* p = out_buf;
 	for (const auto& hit : sorted_hits(it->second)) {
 		buffer_write<uint32_t>(p, static_cast<uint32_t>(hit.first));
 		buffer_write<uint32_t>(p, hit.second);
@@ -123,7 +123,7 @@ int32_t lua_coverage_state::get_all_dump_size() const {
 	return static_cast<int32_t>(size);
 }
 
-int32_t lua_coverage_state::dump_all(byte* out_buf, int32_t out_len) const {
+int32_t lua_coverage_state::dump_all(uint8_t* out_buf, int32_t out_len) const {
 	const auto required = get_all_dump_size();
 	if (required <= 0)
 		return 0;
@@ -138,7 +138,7 @@ int32_t lua_coverage_state::dump_all(byte* out_buf, int32_t out_len) const {
 		return left->name < right->name;
 	});
 
-	byte* p = out_buf;
+	uint8_t* p = out_buf;
 	buffer_write<uint32_t>(p, static_cast<uint32_t>(ordered.size()));
 	for (const auto* file : ordered) {
 		const auto name_length = static_cast<uint16_t>(file->name.size());

@@ -376,7 +376,7 @@ void set_responseb(intptr_t pduel, uint8_t* buf) {
 int32_t preload_script(intptr_t pduel, const char* script_name) {
 	return ((duel*)pduel)->lua->load_script(script_name);
 }
-int32_t get_registry_value(intptr_t pduel, const char* key, byte* out_buf) {
+int32_t get_registry_value(intptr_t pduel, const char* key, uint8_t* out_buf) {
 	if (!pduel || !key || !out_buf) return -1;
 
 	duel* d = (duel*)pduel;
@@ -397,11 +397,11 @@ void set_registry_value(intptr_t pduel, const char* key, const char* value) {
 		d->registry.erase(key);
 	}
 }
-int32_t get_registry_keys(intptr_t pduel, byte* out_buf) {
+int32_t get_registry_keys(intptr_t pduel, uint8_t* out_buf) {
 	if (!pduel || !out_buf) return -1;
 
 	duel* d = (duel*)pduel;
-	byte* ptr = out_buf;
+	uint8_t* ptr = out_buf;
 
 	for (const auto& pair : d->registry) {
 		const std::string& key = pair.first;
@@ -422,11 +422,11 @@ void clear_registry(intptr_t pduel) {
 	d->registry.clear();
 }
 
-int32_t dump_registry(intptr_t pduel, byte* out_buf) {
+int32_t dump_registry(intptr_t pduel, uint8_t* out_buf) {
 	if (!pduel || !out_buf) return -1;
 
 	duel* d = (duel*)pduel;
-	byte* ptr = out_buf;
+	uint8_t* ptr = out_buf;
 
 	for (const auto& pair : d->registry) {
 		const std::string& key = pair.first;
@@ -450,13 +450,13 @@ int32_t dump_registry(intptr_t pduel, byte* out_buf) {
 
 	return ptr - out_buf;  // 返回写入的总字节数
 }
-void load_registry(intptr_t pduel, const byte* in_buf, int32_t in_len) {
+void load_registry(intptr_t pduel, const uint8_t* in_buf, int32_t in_len) {
 	if (!pduel || !in_buf || in_len <= 0) return;
 
 	duel* d = (duel*)pduel;
 
-	byte* ptr = const_cast<byte*>(in_buf);  // buffer_read 要求非 const
-	byte* end = ptr + in_len;
+	uint8_t* ptr = const_cast<uint8_t*>(in_buf);  // buffer_read 要求非 const
+	uint8_t* end = ptr + in_len;
 
 	while (ptr + 4 <= end) {  // 至少要读取 key_len 和 val_len（2 + 2 字节）
 		uint16_t key_len = buffer_read<uint16_t>(ptr);
@@ -480,7 +480,7 @@ int32_t get_lua_coverage_dump_size(intptr_t pduel, const char* name) {
 		return 0;
 	return ((duel*)pduel)->lua->lua_coverage.get_dump_size(name);
 }
-int32_t dump_lua_coverage(intptr_t pduel, const char* name, byte* out_buf, int32_t out_len) {
+int32_t dump_lua_coverage(intptr_t pduel, const char* name, uint8_t* out_buf, int32_t out_len) {
 	if (!pduel || !name || !out_buf || out_len <= 0)
 		return 0;
 	return ((duel*)pduel)->lua->lua_coverage.dump(name, out_buf, out_len);
@@ -490,7 +490,7 @@ int32_t get_all_lua_coverages_dump_size(intptr_t pduel) {
 		return 0;
 	return ((duel*)pduel)->lua->lua_coverage.get_all_dump_size();
 }
-int32_t dump_all_lua_coverages(intptr_t pduel, byte* out_buf, int32_t out_len) {
+int32_t dump_all_lua_coverages(intptr_t pduel, uint8_t* out_buf, int32_t out_len) {
 	if (!pduel || !out_buf || out_len <= 0)
 		return 0;
 	return ((duel*)pduel)->lua->lua_coverage.dump_all(out_buf, out_len);
