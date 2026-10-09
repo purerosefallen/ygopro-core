@@ -260,7 +260,7 @@ int32_t interpreter::is_effect_check(lua_State* L, effect* peffect, int32_t find
 }
 int32_t interpreter::load_script(const char* script_name) {
 	int len = 0;
-	byte* buffer = ::read_script(script_name, &len);
+	uint8_t* buffer = ::read_script(script_name, &len);
 	if (!buffer)
 		return OPERATION_FAIL;
 	++no_action;
