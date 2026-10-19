@@ -620,7 +620,8 @@ uint32_t card::resolve_bitmask_effects(
 		uint32_t remove,
 		uint32_t change,
 		uint32_t* temp,
-		bitmask_resolve_callback callback) {
+		bitmask_resolve_callback callback,
+		effect_filter filter) {
 	if(temp && *temp != UINT32_MAX) // prevent recursion, return the former value
 		return *temp;
 	effect_set effects;
@@ -637,6 +638,8 @@ uint32_t card::resolve_bitmask_effects(
 		filter_effect(change, &effects, FALSE);
 	std::sort(effects.begin(), effects.end(), effect_sort_id);
 	for(auto& peffect : effects) {
+		if(filter && !filter(this, peffect))
+			continue;
 		if(peffect->code == add)
 			value |= peffect->get_value(this);
 		else if(peffect->code == remove)
@@ -1340,8 +1343,6 @@ uint32_t card::get_rscale() {
 uint32_t card::get_link_marker() {
 	if(temp.link_marker != UINT32_MAX) // prevent recursion, return the former value
 		return temp.link_marker;
-	effect_set effects;
-	effect_set effects2;
 	uint32_t link_marker = data.link_marker;
 	temp.link_marker = link_marker;
 	if(!(data.type & TYPE_LINK) || current.location == LOCATION_SZONE) {
@@ -1361,25 +1362,18 @@ uint32_t card::get_link_marker() {
 			}
 		}
 	}
-	filter_effect(EFFECT_ADD_LINK_MARKER_KOISHI, &effects, FALSE);
-	filter_effect(EFFECT_REMOVE_LINK_MARKER_KOISHI, &effects);
-	filter_effect(EFFECT_CHANGE_LINK_MARKER_KOISHI, &effects2);
-	for (int32_t i = 0; i < effects.size(); ++i) {
-		card* ocard = effects[i]->get_handler();
-		if (effects[i]->code == EFFECT_ADD_LINK_MARKER_KOISHI && (!(effects[i]->type & EFFECT_TYPE_FIELD) || !(ocard && ocard->to_leave_fromex)))
-			link_marker |= effects[i]->get_value(this);
-		else if (effects[i]->code == EFFECT_REMOVE_LINK_MARKER_KOISHI && (!(effects[i]->type & EFFECT_TYPE_FIELD) || !(ocard && ocard->to_leave_fromex)))
-			link_marker &= ~(effects[i]->get_value(this));
-		temp.link_marker = link_marker;
-	}
-	for (int32_t i = 0; i < effects2.size(); ++i) {
-		card* ocard = effects2[i]->get_handler();
-		if (!(effects2[i]->type & EFFECT_TYPE_FIELD) || !(ocard && ocard->to_leave_fromex))
-			link_marker = effects2[i]->get_value(this);
-		temp.link_marker = link_marker;
-	}
 	temp.link_marker = UINT32_MAX;
-	return link_marker;
+	return resolve_bitmask_effects(
+		link_marker,
+		EFFECT_ADD_LINK_MARKER_KOISHI,
+		EFFECT_REMOVE_LINK_MARKER_KOISHI,
+		EFFECT_CHANGE_LINK_MARKER_KOISHI,
+		&temp.link_marker,
+		nullptr,
+		[](card*, effect* peffect) {
+			card* handler = peffect->get_handler();
+			return !(peffect->type & EFFECT_TYPE_FIELD) || !(handler && handler->to_leave_fromex);
+		});
 }
 uint32_t card::is_link_marker(uint32_t dir) {
 	return get_link_marker() & dir;

@@ -254,7 +254,8 @@ public:
 		uint32_t remove,
 		uint32_t change,
 		uint32_t* temp = nullptr,
-		bitmask_resolve_callback callback = nullptr);
+		bitmask_resolve_callback callback = nullptr,
+		effect_filter filter = nullptr);
 	uint32_t get_card_type();
 	uint32_t get_type();
 	uint32_t get_fusion_type();
