@@ -91,7 +91,7 @@ build_android:
     ANDROID_API_LEVEL: '26'
   before_script:
     - wget -O android-ndk-r23b-linux.zip https://mat-cacher.moenext.com/https://dl.google.com/android/repository/android-ndk-r23b-linux.zip
-    - 7z x -y android-ndk-r23b-linux.zip
+    - unzip -q android-ndk-r23b-linux.zip
 
 build_linux_x64_no_longjmp:
   extends: .build_unix
