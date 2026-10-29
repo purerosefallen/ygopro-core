@@ -158,10 +158,6 @@ workspace "ocgcoredll"
         toolset "emcc"
         -- defines { "LUA_USE_C89" }
         pic "On"
-        -- WebAssembly always uses Lua's C++ exception handling.
-        removedefines { "LUA_USE_LONGJMP" }
-        buildoptions { "-fexceptions" }
-        linkoptions { "-fexceptions" }
 
 filter {}
 
