@@ -114,14 +114,16 @@ build_wasm_cjs:
   variables:
     PREMAKE_OS: emscripten
     BUILD_TYPE: wasm_cjs
-  image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian12
+  # Debian 13: Emscripten 3.1.69+dfsg-3 (Debian 12 previously used 3.1.6~dfsg-5).
+  image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian13
 
 build_wasm_esm:
   extends: .build_unix
   variables:
     PREMAKE_OS: emscripten
     BUILD_TYPE: wasm_esm
-  image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian12
+  # Debian 13: Emscripten 3.1.69+dfsg-3 (Debian 12 previously used 3.1.6~dfsg-5).
+  image: git-registry.moenext.com/mycard/docker-ygopro-builder:debian13
 
 .build_windows:
   extends: .build
