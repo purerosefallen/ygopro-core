@@ -2,6 +2,7 @@
 #include "interpreter.h"
 #include "scriptlib.h"
 #include <cstring>
+#include <lauxlib.h>
 
 metadata_entry::metadata_entry() {
 	type = PARAM_TYPE_INT;
