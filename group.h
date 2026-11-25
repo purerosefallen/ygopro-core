@@ -12,7 +12,6 @@
 #include "sort.h"
 #include "metadata.h"
 #include <set>
-#include <list>
 
 class card;
 class duel;

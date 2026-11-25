@@ -8,16 +8,15 @@
 #ifndef INTERPRETER_H_
 #define INTERPRETER_H_
 
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 #include "common.h"
+#include <cstdio>
 #include <unordered_map>
 #include <list>
 #include <vector>
 #include <cstdio>
 #include "LuaMemTracker.h"
 #include "lua_coverage.h"
+#include <lua.h>
 
 class card;
 struct card_data;

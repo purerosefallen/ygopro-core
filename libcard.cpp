@@ -6,11 +6,14 @@
  */
 
 #include "scriptlib.h"
+#include "interpreter.h"
 #include "duel.h"
 #include "field.h"
 #include "card.h"
 #include "effect.h"
 #include "group.h"
+#include <lauxlib.h>
+#include <lua.h>
 
 int32_t scriptlib::card_get_card_registered(lua_State *L) {
 	check_param_count(L, 2);

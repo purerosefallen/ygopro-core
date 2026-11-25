@@ -6,12 +6,16 @@
  */
 
 #include "scriptlib.h"
+#include "interpreter.h"
 #include "duel.h"
 #include "field.h"
 #include "card.h"
 #include "effect.h"
 #include "group.h"
 #include "ocgapi.h"
+#include <algorithm>
+#include <lauxlib.h>
+#include <lua.h>
 
 int32_t scriptlib::duel_get_master_rule(lua_State * L) {
 	duel* pduel = interpreter::get_duel_info(L);
