@@ -17,11 +17,11 @@ mat_common:
     - linux
   script:
     # lua
-    - wget -O - https://mat-cacher.moenext.com/https://www.lua.org/ftp/lua-5.4.8.tar.gz | tar zfx -
+    - wget -O - https://mat-cacher.moenext.com/https://www.lua.org/ftp/lua-5.4.8.tar.gz?sha256sum=4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae | tar zfx -
     - mv lua-5.4.8 lua
     - cp premake/lua.lua lua/premake5.lua
-    - wget -O - https://mat-cacher.moenext.com/https://www.sqlite.org/2026/sqlite-autoconf-3510300.tar.gz | tar zfx -
-    - mv sqlite-autoconf-3510300 sqlite3
+    - wget -O - https://mat-cacher.moenext.com/https://www.sqlite.org/2026/sqlite-autoconf-3540100.tar.gz?sha256sum=926ef8d3eab93fbf6e06011901273eec076b25594a4e1cdadd50c987f4f6d64e | tar zfx -
+    - mv sqlite-autoconf-3540100 sqlite3
   artifacts:
     paths:
       - lua
@@ -34,8 +34,8 @@ mat_windows:
     - linux
   script:
     # premake5.exe
-    - wget https://cdn02.moecube.com:444/premake5-built/premake-5.0.0-beta8-windows.zip
-    - 7z x -y premake-5.0.0-beta8-windows.zip
+    - wget https://cdn02.moecube.com:444/premake5-built/premake-5.0.0-windows.zip
+    - 7z x -y premake-5.0.0-windows.zip
   artifacts:
     paths:
       - premake5.exe
@@ -46,7 +46,7 @@ mat_macos:
   tags:
     - linux
   script:
-    - wget -O - https://cdn02.moecube.com:444/premake5-built/premake-5.0.0-beta8-macosx.tar.gz | tar zfx -
+    - wget -O - https://cdn02.moecube.com:444/premake5-built/premake-5.0.0-macosx.tar.gz | tar zfx -
     - chmod +x premake5
   artifacts:
     paths:
@@ -90,7 +90,7 @@ build_android:
     NDK_DIR: android-ndk-r23b
     ANDROID_API_LEVEL: '26'
   before_script:
-    - wget -O android-ndk-r23b-linux.zip https://mat-cacher.moenext.com/https://dl.google.com/android/repository/android-ndk-r23b-linux.zip
+    - wget -O android-ndk-r23b-linux.zip https://mat-cacher.moenext.com/https://dl.google.com/android/repository/android-ndk-r23b-linux.zip?sha256sum=c6e97f9c8cfe5b7be0a9e6c15af8e7a179475b7ded23e2d1c1fa0945d6fb4382
     - 7z x -y -snld20 android-ndk-r23b-linux.zip
 
 build_linux_x64_no_longjmp:
